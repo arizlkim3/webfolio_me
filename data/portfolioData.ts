@@ -179,7 +179,7 @@ export const STATIC_PORTFOLIO_DATA: PortfolioItem[] = [
 
 export const STATIC_PROFILE_DATA: UserProfile | null = {
   "name": "Arizki Maulana Fajar",
-  "role": "Profesi / Keahlian Utama",
+  "role": "Editor Photo",
   "bio": "Lulusan D3 Desain Komunikasi Visual dengan pengalaman kerja sebagai Tim Produksi dalam pembuatan produk pemodernan sastra film animasi legenda nusantara di Badan Pengembangan dan Pembinaan Bahasa, Kementerian Pendidikan, Kebudayaan, Riset, dan Teknologi yang berbasis kontrak projek.",
   "address": "Kab. Tegal, Jawa Tengah / Indonesia",
   "email": "arizkim3@gmail.com",
