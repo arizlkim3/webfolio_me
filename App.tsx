@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { TabView, UserRole, Theme } from './types';
 import CreatePage from './components/CreatePage';
@@ -63,7 +62,7 @@ const App: React.FC = () => {
               </div>
               <div className="flex flex-col">
                 <h1 className="text-lg md:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400 leading-none">
-                  Webfolio
+                  WebFolio
                 </h1>
                 <span className="hidden md:block text-xs text-slate-500 dark:text-slate-400 font-medium">
                   Mode: {role === 'creator' ? 'Pemilik (Admin)' : 'Pengunjung'}
@@ -233,7 +232,7 @@ const App: React.FC = () => {
       <footer className="border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm py-6 md:py-8 mt-auto transition-colors duration-300 pb-24 md:pb-8">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-slate-500 dark:text-slate-500 text-xs md:text-sm">
-            &copy; {new Date().getFullYear()} Webfolio Builder.
+            &copy; {new Date().getFullYear()} WebFolio.
           </p>
         </div>
       </footer>

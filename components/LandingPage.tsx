@@ -52,10 +52,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onLogin, theme, toggleTheme }
       <div className="relative z-10 max-w-4xl w-full text-center space-y-6 md:space-y-8 animate-fade-in px-2">
         <div className="space-y-3 md:space-y-4">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary pb-2 leading-tight">
-            Webfolio Builder
+            WebFolio
           </h1>
           <p className="text-slate-600 dark:text-slate-400 text-base md:text-xl max-w-2xl mx-auto leading-relaxed">
-            Platform sederhana untuk mengelola dan menampilkan portofolio terbaik Anda dalam sekejap.
+            Wadah digital eksklusif untuk setiap karyamu. Tampil estetik, kelola dengan mudah, dan bangun personal branding yang memukau dalam sekejap.
           </p>
         </div>
 
