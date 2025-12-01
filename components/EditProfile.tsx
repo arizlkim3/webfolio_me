@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { UserProfile, Education, Experience } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { UserProfile, Education, Experience, Skill, SocialLinks } from '../types';
 import { getUserProfile, saveUserProfile } from '../services/storage';
 import Button from './Button';
 
@@ -10,19 +10,62 @@ interface EditProfileProps {
 
 const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [skillsInput, setSkillsInput] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const data = getUserProfile();
+    // Ensure socials object exists
+    if (!data.socials) {
+      data.socials = {};
+    }
     setProfile(data);
-    setSkillsInput(data.skills.join(', '));
   }, []);
 
   const handleChange = (field: keyof UserProfile, value: any) => {
     if (!profile) return;
     setProfile({ ...profile, [field]: value });
+  };
+
+  const handleSocialChange = (platform: keyof SocialLinks, value: string) => {
+    if (!profile) return;
+    setProfile({
+      ...profile,
+      socials: {
+        ...profile.socials,
+        [platform]: value
+      }
+    });
+  };
+
+  // --- Avatar Handlers ---
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Limit size to 1MB to prevent LocalStorage quota exceeded errors
+      if (file.size > 1024 * 1024) {
+        setMessage({ type: 'error', text: 'Ukuran foto terlalu besar. Maksimal 1MB.' });
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (profile) {
+          setProfile({ ...profile, avatarUrl: reader.result as string });
+          setMessage(null);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveAvatar = () => {
+    if (profile) {
+      setProfile({ ...profile, avatarUrl: undefined });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   // --- Education Handlers ---
@@ -61,15 +104,35 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
     setProfile({ ...profile, experience: updatedExp });
   };
 
+  // --- Skills Handlers ---
+  const addSkill = () => {
+    if (!profile) return;
+    const newSkill: Skill = { id: crypto.randomUUID(), name: '', level: 70 };
+    setProfile({ ...profile, skills: [...profile.skills, newSkill] });
+  };
+
+  const removeSkill = (id: string) => {
+    if (!profile) return;
+    setProfile({ ...profile, skills: profile.skills.filter(s => s.id !== id) });
+  };
+
+  const updateSkill = (id: string, field: keyof Skill, value: any) => {
+    if (!profile) return;
+    const updatedSkills = profile.skills.map(s => s.id === id ? { ...s, [field]: value } : s);
+    setProfile({ ...profile, skills: updatedSkills });
+  };
+
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
 
     setIsSaving(true);
     
+    // Filter empty skills
     const updatedProfile: UserProfile = {
       ...profile,
-      skills: skillsInput.split(',').map(s => s.trim()).filter(s => s.length > 0)
+      skills: profile.skills.filter(s => s.name.trim().length > 0)
     };
 
     const success = saveUserProfile(updatedProfile);
@@ -80,7 +143,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
         setMessage({ type: 'success', text: 'Profil berhasil disimpan!' });
         setTimeout(() => onSuccess(), 1000);
       } else {
-        setMessage({ type: 'error', text: 'Gagal menyimpan profil.' });
+        setMessage({ type: 'error', text: 'Gagal menyimpan profil (Storage Penuh). Coba kurangi ukuran foto.' });
       }
     }, 800);
   };
@@ -102,35 +165,206 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           
+          {/* Section: Foto Profil */}
+          <div className="flex flex-col md:flex-row items-center gap-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+            <div className="relative group">
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700 shadow-md ring-4 ring-white dark:ring-slate-800">
+                {profile.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-3 text-center md:text-left">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Foto Profil</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Format: JPG, PNG. Maksimal 1MB.</p>
+              </div>
+              <div className="flex gap-3 justify-center md:justify-start">
+                <label className="cursor-pointer bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+                  Ubah Foto
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                  />
+                </label>
+                {profile.avatarUrl && (
+                  <button 
+                    type="button" 
+                    onClick={handleRemoveAvatar}
+                    className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                  >
+                    Hapus
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Section: Info Dasar */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-slate-800 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-2">Informasi Dasar</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="md:col-span-2">
                 <label className="label">Nama Lengkap</label>
                 <input type="text" value={profile.name} onChange={(e) => handleChange('name', e.target.value)} className="input-field" />
               </div>
+              
               <div>
                 <label className="label">Role / Pekerjaan</label>
                 <input type="text" value={profile.role} onChange={(e) => handleChange('role', e.target.value)} className="input-field" placeholder="Full Stack Developer" />
               </div>
+              
               <div>
                 <label className="label">Alamat / Lokasi</label>
                 <input type="text" value={profile.address} onChange={(e) => handleChange('address', e.target.value)} className="input-field" />
               </div>
+
               <div>
-                <label className="label">Email</label>
-                <input type="email" value={profile.email || ''} onChange={(e) => handleChange('email', e.target.value)} className="input-field" />
+                <label className="label">Umur (Tahun)</label>
+                <input type="number" value={profile.age || ''} onChange={(e) => handleChange('age', e.target.value)} className="input-field" placeholder="25" />
               </div>
+
+              <div>
+                <label className="label">Jenis Kelamin</label>
+                <select 
+                  value={profile.gender || 'Pria'} 
+                  onChange={(e) => handleChange('gender', e.target.value)} 
+                  className="input-field appearance-none cursor-pointer"
+                >
+                  <option value="Pria">Pria</option>
+                  <option value="Wanita">Wanita</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+
               <div className="md:col-span-2">
                 <label className="label">Biografi Singkat</label>
                 <textarea rows={3} value={profile.bio} onChange={(e) => handleChange('bio', e.target.value)} className="input-field" />
               </div>
-              <div className="md:col-span-2">
-                <label className="label">Keahlian (Skills) - Pisahkan dengan koma</label>
-                <input type="text" value={skillsInput} onChange={(e) => setSkillsInput(e.target.value)} className="input-field" placeholder="React, TypeScript, UI Design" />
+            </div>
+          </div>
+
+          {/* Section: Kontak & Sosmed */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-2">Kontak & Media Sosial</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div>
+                <label className="label">Email</label>
+                <input type="email" value={profile.email || ''} onChange={(e) => handleChange('email', e.target.value)} className="input-field" />
+              </div>
+              
+              <div>
+                <label className="label">Nomor Telepon / WhatsApp</label>
+                <input type="tel" value={profile.phone || ''} onChange={(e) => handleChange('phone', e.target.value)} className="input-field" placeholder="0812-xxxx-xxxx" />
+              </div>
+
+              <div>
+                <label className="label flex items-center gap-2">
+                  <span className="text-blue-600">LinkedIn</span> URL
+                </label>
+                <input 
+                  type="url" 
+                  value={profile.socials?.linkedin || ''} 
+                  onChange={(e) => handleSocialChange('linkedin', e.target.value)} 
+                  className="input-field" 
+                  placeholder="https://linkedin.com/in/username" 
+                />
+              </div>
+
+              <div>
+                <label className="label flex items-center gap-2">
+                  <span className="text-gray-800 dark:text-white">GitHub</span> URL
+                </label>
+                <input 
+                  type="url" 
+                  value={profile.socials?.github || ''} 
+                  onChange={(e) => handleSocialChange('github', e.target.value)} 
+                  className="input-field" 
+                  placeholder="https://github.com/username" 
+                />
+              </div>
+
+              <div>
+                <label className="label flex items-center gap-2">
+                  <span className="text-pink-600">Instagram</span> URL
+                </label>
+                <input 
+                  type="url" 
+                  value={profile.socials?.instagram || ''} 
+                  onChange={(e) => handleSocialChange('instagram', e.target.value)} 
+                  className="input-field" 
+                  placeholder="https://instagram.com/username" 
+                />
+              </div>
+
+              <div>
+                <label className="label flex items-center gap-2">
+                  <span className="text-blue-400">Twitter / X</span> URL
+                </label>
+                <input 
+                  type="url" 
+                  value={profile.socials?.twitter || ''} 
+                  onChange={(e) => handleSocialChange('twitter', e.target.value)} 
+                  className="input-field" 
+                  placeholder="https://twitter.com/username" 
+                />
               </div>
             </div>
+          </div>
+
+          {/* Section: Keahlian (Skills) - Updated with Slider */}
+          <div className="space-y-4">
+             <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Keahlian & Kemahiran</h3>
+                <Button type="button" variant="secondary" onClick={addSkill} className="text-xs py-1 px-3">
+                   + Tambah Skill
+                </Button>
+             </div>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {profile.skills.map((skill) => (
+                  <div key={skill.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 relative">
+                     <button type="button" onClick={() => removeSkill(skill.id)} className="absolute top-2 right-2 text-red-400 hover:text-red-600 transition-colors">✕</button>
+                     
+                     <div className="mb-3 pr-6">
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Nama Skill</label>
+                        <input 
+                          type="text" 
+                          value={skill.name} 
+                          onChange={(e) => updateSkill(skill.id, 'name', e.target.value)} 
+                          className="input-field text-sm" 
+                          placeholder="Contoh: Photoshop, React" 
+                        />
+                     </div>
+                     
+                     <div>
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Tingkat Kemahiran</label>
+                          <span className="text-xs font-bold text-primary">{skill.level}%</span>
+                        </div>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="100" 
+                          value={skill.level} 
+                          onChange={(e) => updateSkill(skill.id, 'level', parseInt(e.target.value))} 
+                          className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                     </div>
+                  </div>
+                ))}
+             </div>
+             {profile.skills.length === 0 && <p className="text-slate-500 text-sm italic">Belum ada skill yang ditambahkan.</p>}
           </div>
 
           {/* Section: Pengalaman */}
@@ -141,7 +375,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
                    + Tambah
                 </Button>
              </div>
-             {profile.experience.map((exp, index) => (
+             {profile.experience.map((exp) => (
                <div key={exp.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 relative group">
                   <button type="button" onClick={() => removeExperience(exp.id)} className="absolute top-2 right-2 text-red-400 hover:text-red-600">✕</button>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
@@ -163,7 +397,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
                    + Tambah
                 </Button>
              </div>
-             {profile.education.map((edu, index) => (
+             {profile.education.map((edu) => (
                <div key={edu.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 relative group">
                   <button type="button" onClick={() => removeEducation(edu.id)} className="absolute top-2 right-2 text-red-400 hover:text-red-600">✕</button>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

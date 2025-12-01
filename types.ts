@@ -27,16 +27,34 @@ export interface Experience {
   description: string;
 }
 
+export interface Skill {
+  id: string;
+  name: string;
+  level: number; // 0 - 100
+}
+
+export interface SocialLinks {
+  linkedin?: string;
+  github?: string;
+  instagram?: string;
+  twitter?: string;
+  website?: string;
+}
+
 export interface UserProfile {
   name: string;
   role: string;
   address: string;
   bio: string;
-  skills: string[];
+  email?: string;
+  phone?: string;
+  age?: string;
+  gender?: 'Pria' | 'Wanita' | 'Lainnya';
+  avatarUrl?: string;
+  socials?: SocialLinks;
+  skills: Skill[];
   education: Education[];
   experience: Experience[];
-  email?: string;
-  avatarUrl?: string; // Optional
 }
 
 export type TabView = 'create' | 'view' | 'profile';

@@ -48,7 +48,20 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-200 font-sans transition-colors duration-300">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-200 font-sans transition-colors duration-300 relative overflow-x-hidden">
+      
+      {/* --- ANIMATED BACKGROUND LAYER --- */}
+      <div className="fixed inset-0 w-full h-full pointer-events-none z-0 overflow-hidden">
+        {/* Animated Grid */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-60 animate-grid-flow"></div>
+        
+        {/* Glowing Orbs (Blobs) */}
+        <div className="absolute top-0 -left-4 w-72 h-72 bg-primary/20 dark:bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+        <div className="absolute top-0 -right-4 w-72 h-72 bg-secondary/20 dark:bg-secondary/10 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300/20 dark:bg-pink-600/10 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+      </div>
+      {/* -------------------------------- */}
+
       {/* Navbar */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -141,7 +154,7 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 w-full pb-24 md:pb-8">
+      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 w-full pb-24 md:pb-8 relative z-10">
         {activeTab === 'create' && role === 'creator' ? (
           <CreatePage onSuccess={() => setActiveTab('view')} />
         ) : activeTab === 'profile' && role === 'creator' ? (
@@ -229,7 +242,7 @@ const App: React.FC = () => {
         </>
       )}
 
-      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm py-6 md:py-8 mt-auto transition-colors duration-300 pb-24 md:pb-8">
+      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm py-6 md:py-8 mt-auto transition-colors duration-300 pb-24 md:pb-8 relative z-10">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-slate-500 dark:text-slate-500 text-xs md:text-sm">
             &copy; {new Date().getFullYear()} WebFolio.

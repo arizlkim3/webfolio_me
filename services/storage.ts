@@ -1,5 +1,5 @@
 
-import { PortfolioItem, UserProfile, LOCAL_STORAGE_KEY, LOCAL_STORAGE_PROFILE_KEY } from '../types';
+import { PortfolioItem, UserProfile, LOCAL_STORAGE_KEY, LOCAL_STORAGE_PROFILE_KEY, Skill } from '../types';
 import { STATIC_PORTFOLIO_DATA, STATIC_PROFILE_DATA } from '../data/portfolioData';
 
 // --- PORTFOLIO ITEMS ---
@@ -104,30 +104,61 @@ const DEFAULT_PROFILE: UserProfile = {
   role: "Profesi / Keahlian Utama",
   bio: "Tuliskan deskripsi singkat tentang diri Anda, minat profesional, dan tujuan karir Anda di sini.",
   address: "Kota, Negara",
-  skills: ["Skill 1", "Skill 2", "Skill 3"],
+  email: "email@contoh.com",
+  phone: "0812-3456-7890",
+  age: "25",
+  gender: "Pria",
+  socials: {
+    linkedin: "https://linkedin.com",
+    github: "https://github.com",
+    instagram: "https://instagram.com"
+  },
+  skills: [
+    { id: '1', name: "Skill 1", level: 90 },
+    { id: '2', name: "Skill 2", level: 75 },
+    { id: '3', name: "Skill 3", level: 60 }
+  ],
   education: [],
   experience: [],
-  email: "email@contoh.com"
+};
+
+// Helper untuk migrasi data skill lama (string[]) ke baru (Skill[])
+const migrateSkills = (profile: any): UserProfile => {
+  if (profile && Array.isArray(profile.skills)) {
+    // Cek jika elemen pertama adalah string (format lama)
+    if (profile.skills.length > 0 && typeof profile.skills[0] === 'string') {
+      const newSkills: Skill[] = profile.skills.map((s: string) => ({
+        id: crypto.randomUUID(),
+        name: s,
+        level: 80 // Default level
+      }));
+      return { ...profile, skills: newSkills };
+    }
+  }
+  return profile;
 };
 
 export const getUserProfile = (): UserProfile => {
   try {
-    // LOGIC BARU: Prioritaskan Data Statis (File)
-    
+    let profileData: UserProfile;
+
     // 1. Cek Static Data (File) Terlebih Dahulu
-    // Jika user sudah mengisi STATIC_PROFILE_DATA di file, gunakan itu.
     if (STATIC_PROFILE_DATA) {
-      return STATIC_PROFILE_DATA;
+      profileData = STATIC_PROFILE_DATA;
+    } else {
+       // 2. Jika File Kosong (null), baru Cek LocalStorage
+       const localProfileString = localStorage.getItem(LOCAL_STORAGE_PROFILE_KEY);
+       if (localProfileString) {
+         profileData = JSON.parse(localProfileString);
+       } else {
+         // 3. Return Default Placeholder
+         profileData = DEFAULT_PROFILE;
+       }
     }
 
-    // 2. Jika File Kosong (null), baru Cek LocalStorage
-    const localProfileString = localStorage.getItem(LOCAL_STORAGE_PROFILE_KEY);
-    if (localProfileString) {
-      return JSON.parse(localProfileString);
-    }
+    // Jalankan migrasi jika perlu
+    return migrateSkills(profileData);
 
-    // 3. Return Default Placeholder
-    return DEFAULT_PROFILE;
   } catch (error) {
     console.error("Gagal memuat profil:", error);
     return DEFAULT_PROFILE;

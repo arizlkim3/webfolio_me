@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { PortfolioItem, UserProfile, MediaType } from '../types';
 import { getPortfolioData, deletePortfolioItem, getUserProfile } from '../services/storage';
 import Button from './Button';
@@ -55,12 +55,124 @@ const SECTIONS: { type: MediaType; label: string; description: string; icon: Rea
   }
 ];
 
+// --- Sub-Component: Media Item with Skeleton Loader ---
+const MediaItem: React.FC<{ item: PortfolioItem }> = ({ item }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const type = item.mediaType || 'image';
+  const url = item.mediaUrl || '';
+
+  // Handle loading state completion
+  const handleLoad = () => setIsLoading(false);
+
+  // Skeleton Loader Element
+  const Skeleton = () => (
+    <div className="absolute inset-0 z-10 bg-slate-200 dark:bg-slate-700 animate-pulse flex items-center justify-center">
+      <svg className="w-10 h-10 text-slate-300 dark:text-slate-600 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {type === 'image' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />}
+        {type === 'video' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />}
+        {type === 'web' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />}
+        {type === 'audio' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />}
+      </svg>
+    </div>
+  );
+
+  if (!url && type === 'image') {
+    return <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-100 dark:bg-slate-800">No Image</div>;
+  }
+
+  if (type === 'web') {
+    return (
+      <div className="w-full h-full bg-slate-50 dark:bg-slate-900 flex flex-col relative group">
+         {/* Web Header */}
+         <div className="bg-slate-200 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 px-3 py-1.5 flex items-center gap-1.5 z-20">
+           <div className="w-2 h-2 rounded-full bg-red-400"></div>
+           <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
+           <div className="w-2 h-2 rounded-full bg-green-400"></div>
+           <div className="ml-2 bg-white dark:bg-slate-900 text-[10px] text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded flex-1 truncate font-mono">
+             {url.replace(/(^\w+:|^)\/\//, '')}
+           </div>
+         </div>
+         
+         <div className="flex-1 relative bg-white overflow-hidden">
+           {isLoading && <Skeleton />}
+           <iframe 
+             src={url} 
+             onLoad={handleLoad}
+             className={`w-[200%] h-[200%] transform scale-50 origin-top-left border-0 pointer-events-none select-none transition-opacity duration-700 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+             title={`Preview of ${item.title}`}
+             sandbox="allow-scripts allow-same-origin"
+           />
+           <div className="absolute inset-0 bg-transparent z-10"></div>
+         </div>
+         
+         <div className="absolute top-2 right-2 bg-blue-600/80 text-white text-xs px-2 py-1 rounded backdrop-blur-sm pointer-events-none z-20">
+           Website
+         </div>
+      </div>
+    );
+  }
+
+  if (type === 'video') {
+    return (
+      <div className="w-full h-full bg-black flex items-center justify-center relative group">
+         {isLoading && <Skeleton />}
+         <video 
+           src={url} 
+           onLoadedData={handleLoad}
+           controls 
+           className={`w-full h-full object-cover transition-opacity duration-700 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+           preload="metadata"
+         />
+         <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm pointer-events-none z-20">
+           Video
+         </div>
+      </div>
+    );
+  }
+
+  if (type === 'audio') {
+    // Audio usually loads fast, but we show a placeholder design
+    return (
+      <div className="w-full h-full bg-slate-100 dark:bg-slate-800 flex flex-col items-center justify-center p-6 relative">
+         <div className="w-16 h-16 rounded-full bg-gradient-to-br from-secondary to-purple-600 flex items-center justify-center mb-4 shadow-lg animate-blob">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+         </div>
+         <audio src={url} controls className="w-full z-10 relative" />
+         <div className="absolute top-2 right-2 bg-purple-600/80 text-white text-xs px-2 py-1 rounded backdrop-blur-sm pointer-events-none">
+           Audio
+         </div>
+      </div>
+    );
+  }
+
+  // Image Default
+  return (
+    <div className="w-full h-full relative bg-slate-100 dark:bg-slate-800">
+      {isLoading && <Skeleton />}
+      <img 
+        src={url} 
+        alt={item.title} 
+        onLoad={handleLoad}
+        className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${isLoading ? 'opacity-0' : 'opacity-100'}`} 
+        loading="lazy"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"></div>
+    </div>
+  );
+};
+
 const ViewPage: React.FC<ViewPageProps> = ({ isCreator }) => {
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ViewTab>('gallery');
   const [showSubMenu, setShowSubMenu] = useState(false);
+  
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   // Load data automatically
   const loadData = () => {
@@ -77,6 +189,28 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator }) => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Extract unique tags from all items
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    items.forEach(item => {
+      item.tags.forEach(tag => tags.add(tag));
+    });
+    return Array.from(tags).sort();
+  }, [items]);
+
+  // Filter Logic
+  const filteredItems = useMemo(() => {
+    return items.filter(item => {
+      const matchesSearch = 
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        item.description.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesTag = selectedTag ? item.tags.includes(selectedTag) : true;
+
+      return matchesSearch && matchesTag;
+    });
+  }, [items, searchQuery, selectedTag]);
 
   const handleDelete = (id: string) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus portofolio ini?')) {
@@ -98,19 +232,18 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator }) => {
   };
 
   const handleDownloadJson = () => {
-    const fullData = {
-       profile: profile,
-       portfolio: items
-    };
-    
+    // Generate file content for 'data/portfolioData.ts'
     const fileContent = `
+import { PortfolioItem, UserProfile } from '../types';
+
 /**
- * Salin isi file ini ke 'data/portfolioData.ts'
+ * DATA PORTOFOLIO STATIS (Generated)
+ * Copy kode ini dan paste (timpa) ke dalam file: 'data/portfolioData.ts'
  */
 
-export const STATIC_PORTFOLIO_DATA = ${JSON.stringify(items, null, 2)};
+export const STATIC_PORTFOLIO_DATA: PortfolioItem[] = ${JSON.stringify(items, null, 2)};
 
-export const STATIC_PROFILE_DATA = ${JSON.stringify(profile, null, 2)};
+export const STATIC_PROFILE_DATA: UserProfile | null = ${JSON.stringify(profile, null, 2)};
     `;
 
     const blob = new Blob([fileContent], { type: "text/plain" });
@@ -118,93 +251,10 @@ export const STATIC_PROFILE_DATA = ${JSON.stringify(profile, null, 2)};
     
     const link = document.createElement('a');
     link.href = url;
-    link.download = "portfolioData.ts.txt";
+    link.download = "portfolioData.ts";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  // Helper function to render media based on type
-  const renderMedia = (item: PortfolioItem) => {
-    const type = item.mediaType || 'image'; 
-    const url = item.mediaUrl || '';
-
-    if (!url && type === 'image') {
-      return <div className="w-full h-full flex items-center justify-center text-slate-400">No Image</div>;
-    }
-
-    if (type === 'web') {
-      return (
-        <div className="w-full h-full bg-slate-50 dark:bg-slate-900 flex flex-col relative group">
-           <div className="bg-slate-200 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 px-3 py-1.5 flex items-center gap-1.5">
-             <div className="w-2 h-2 rounded-full bg-red-400"></div>
-             <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-             <div className="w-2 h-2 rounded-full bg-green-400"></div>
-             <div className="ml-2 bg-white dark:bg-slate-900 text-[10px] text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded flex-1 truncate font-mono">
-               {url.replace(/(^\w+:|^)\/\//, '')}
-             </div>
-           </div>
-           
-           <div className="flex-1 relative bg-white overflow-hidden">
-             <iframe 
-               src={url} 
-               className="w-[200%] h-[200%] transform scale-50 origin-top-left border-0 pointer-events-none select-none"
-               title={`Preview of ${item.title}`}
-               sandbox="allow-scripts allow-same-origin"
-             />
-             <div className="absolute inset-0 bg-transparent z-10"></div>
-           </div>
-           
-           <div className="absolute top-2 right-2 bg-blue-600/80 text-white text-xs px-2 py-1 rounded backdrop-blur-sm pointer-events-none z-20">
-             Website
-           </div>
-        </div>
-      );
-    }
-
-    if (type === 'video') {
-      return (
-        <div className="w-full h-full bg-black flex items-center justify-center relative group">
-           <video 
-             src={url} 
-             controls 
-             className="w-full h-full object-cover" 
-             preload="metadata"
-           />
-           <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm pointer-events-none">
-             Video
-           </div>
-        </div>
-      );
-    }
-
-    if (type === 'audio') {
-      return (
-        <div className="w-full h-full bg-slate-100 dark:bg-slate-800 flex flex-col items-center justify-center p-6 relative">
-           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-secondary to-purple-600 flex items-center justify-center mb-4 shadow-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-              </svg>
-           </div>
-           <audio src={url} controls className="w-full z-10 relative" />
-           <div className="absolute top-2 right-2 bg-purple-600/80 text-white text-xs px-2 py-1 rounded backdrop-blur-sm pointer-events-none">
-             Audio
-           </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="w-full h-full relative">
-        <img 
-          src={url} 
-          alt={item.title} 
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-      </div>
-    );
   };
 
   if (loading) {
@@ -315,51 +365,121 @@ export const STATIC_PROFILE_DATA = ${JSON.stringify(profile, null, 2)};
         ) : (
           <div className="animate-fade-in md:pl-20">
             {/* Header Gallery */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 md:mb-12 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-6 rounded-2xl border border-slate-200/50 dark:border-slate-800/50">
-              <div className=""> 
-                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3 mb-2">
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Galeri Portofolio</span>
-                  <span className="text-xs md:text-sm bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 py-1 px-3 rounded-full font-normal border border-slate-200 dark:border-slate-700">
-                    {items.length}
-                  </span>
-                </h2>
-                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-lg">
-                  Kumpulan proyek terbaik dan karya kreatif terbaru.
-                </p>
+            <div className="flex flex-col gap-6 mb-6 md:mb-10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-6 rounded-2xl border border-slate-200/50 dark:border-slate-800/50">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div className=""> 
+                  <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3 mb-2">
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Galeri Portofolio</span>
+                    <span className="text-xs md:text-sm bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 py-1 px-3 rounded-full font-normal border border-slate-200 dark:border-slate-700">
+                      {filteredItems.length}
+                    </span>
+                  </h2>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-lg">
+                    Kumpulan proyek terbaik dan karya kreatif terbaru.
+                  </p>
+                </div>
+
+                {/* Export Button for Creator */}
+                {isCreator && (
+                  <Button 
+                    variant="secondary" 
+                    onClick={handleDownloadJson}
+                    className="flex items-center justify-center gap-2 w-full md:w-auto text-sm py-2.5"
+                    title="Download JSON untuk dimasukkan ke folder proyek"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download Data
+                  </Button>
+                )}
               </div>
 
-              {/* Export Button for Creator */}
-              {isCreator && (
-                <Button 
-                  variant="secondary" 
-                  onClick={handleDownloadJson}
-                  className="flex items-center justify-center gap-2 w-full md:w-auto text-sm py-2.5"
-                  title="Download JSON untuk dimasukkan ke folder proyek"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Download Data
-                </Button>
-              )}
+              {/* SEARCH & FILTER BAR */}
+              <div className="flex flex-col md:flex-row gap-4 border-t border-slate-200 dark:border-slate-700 pt-4">
+                
+                {/* Search Input */}
+                <div className="relative flex-shrink-0 w-full md:w-64">
+                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                     <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                     </svg>
+                   </div>
+                   <input
+                     type="text"
+                     value={searchQuery}
+                     onChange={(e) => setSearchQuery(e.target.value)}
+                     className="block w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl leading-5 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm transition-all"
+                     placeholder="Cari judul atau deskripsi..."
+                   />
+                </div>
+
+                {/* Tags Filter (Horizontal Scroll) */}
+                <div className="flex-1 flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+                   <button
+                      onClick={() => setSelectedTag(null)}
+                      className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+                        selectedTag === null
+                          ? 'bg-primary text-white border-primary'
+                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                      }`}
+                   >
+                     Semua
+                   </button>
+                   {allTags.map((tag) => (
+                     <button
+                       key={tag}
+                       onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
+                       className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+                         selectedTag === tag
+                           ? 'bg-primary text-white border-primary'
+                           : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
+                       }`}
+                     >
+                       #{tag}
+                     </button>
+                   ))}
+                </div>
+              </div>
             </div>
 
-            {items.length === 0 ? (
+            {filteredItems.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center bg-white dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm mx-auto">
                 <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-full mb-6">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
+                  {searchQuery || selectedTag ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  ) : (
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                     </svg>
+                  )}
                 </div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Belum ada Portofolio</h3>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+                  {searchQuery || selectedTag ? 'Tidak ditemukan' : 'Belum ada Portofolio'}
+                </h3>
                 <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md px-4">
-                  {isCreator ? "Mulai tambahkan karya Anda di halaman Buat." : "Pemilik belum menambahkan portofolio."}
+                  {searchQuery || selectedTag 
+                     ? `Tidak ada hasil untuk pencarian "${searchQuery}" ${selectedTag ? `dengan tag #${selectedTag}` : ''}.` 
+                     : isCreator 
+                        ? "Mulai tambahkan karya Anda di halaman Buat." 
+                        : "Pemilik belum menambahkan portofolio."
+                  }
                 </p>
+                {(searchQuery || selectedTag) && (
+                   <button 
+                     onClick={() => {setSearchQuery(''); setSelectedTag(null);}}
+                     className="mt-4 text-primary font-medium hover:underline text-sm"
+                   >
+                     Reset Pencarian
+                   </button>
+                )}
               </div>
             ) : (
               <div className="space-y-12">
                 {SECTIONS.map((section) => {
-                  const sectionItems = items
+                  const sectionItems = filteredItems
                     .filter(item => (item.mediaType || 'image') === section.type)
                     .sort((a, b) => a.title.localeCompare(b.title));
 
@@ -387,7 +507,7 @@ export const STATIC_PROFILE_DATA = ${JSON.stringify(profile, null, 2)};
                           <div id={`item-${item.id}`} key={item.id} className="group bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full hover:-translate-y-1 shadow-md shadow-slate-200/50 dark:shadow-none scroll-mt-32">
                             
                             <div className="h-48 md:h-56 overflow-hidden relative bg-slate-100 dark:bg-slate-800">
-                              {renderMedia(item)}
+                              <MediaItem item={item} />
                             </div>
 
                             <div className="p-5 md:p-6 flex flex-col flex-grow">
@@ -396,9 +516,17 @@ export const STATIC_PROFILE_DATA = ${JSON.stringify(profile, null, 2)};
                               
                               <div className="flex flex-wrap gap-2 mb-6">
                                 {item.tags.map((tag, idx) => (
-                                  <span key={idx} className="text-xs font-medium bg-slate-100 dark:bg-slate-800 text-primary px-2 py-1 rounded-md">
-                                    {tag}
-                                  </span>
+                                  <button 
+                                    key={idx} 
+                                    onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
+                                    className={`text-xs font-medium px-2 py-1 rounded-md transition-colors ${
+                                       selectedTag === tag 
+                                       ? 'bg-primary text-white' 
+                                       : 'bg-slate-100 dark:bg-slate-800 text-primary hover:bg-slate-200 dark:hover:bg-slate-700'
+                                    }`}
+                                  >
+                                    #{tag}
+                                  </button>
                                 ))}
                               </div>
 
@@ -469,6 +597,7 @@ export const STATIC_PROFILE_DATA = ${JSON.stringify(profile, null, 2)};
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
+          height: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
