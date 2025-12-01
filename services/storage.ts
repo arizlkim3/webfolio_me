@@ -14,7 +14,18 @@ export const getPortfolioData = (): PortfolioItem[] => {
   try {
     const localDataString = localStorage.getItem(LOCAL_STORAGE_KEY);
     const localDataRaw = localDataString ? JSON.parse(localDataString) : [];
-    const allItemsRaw = [...localDataRaw, ...STATIC_PORTFOLIO_DATA];
+    
+    // LOGIC BARU: Prioritaskan Data Statis (File)
+    // 1. Ambil semua ID dari data statis
+    // @ts-ignore
+    const staticIds = new Set(STATIC_PORTFOLIO_DATA.map((item: any) => item.id));
+
+    // 2. Filter data lokal: Hanya ambil item yang BELUM ADA di data statis (item baru yang belum didownload/disave ke file)
+    // Ini mencegah data lokal menimpa data file yang sudah diupdate.
+    const uniqueLocalItems = localDataRaw.filter((item: any) => !staticIds.has(item.id));
+
+    // 3. Gabungkan: Data File (Utama) + Data Lokal (Baru/Draft)
+    const allItemsRaw = [...STATIC_PORTFOLIO_DATA, ...uniqueLocalItems];
     
     const normalizedItems: PortfolioItem[] = allItemsRaw.map((item: OldPortfolioItem) => ({
       ...item,
@@ -24,7 +35,14 @@ export const getPortfolioData = (): PortfolioItem[] => {
       projectUrl: item.projectUrl || ''
     }));
 
-    const uniqueItems = Array.from(new Map(normalizedItems.map(item => [item.id, item])).values());
+    // Deduplikasi final berdasarkan ID (untuk keamanan ganda)
+    const uniqueItemsMap = new Map();
+    normalizedItems.forEach(item => {
+        uniqueItemsMap.set(item.id, item);
+    });
+    
+    const uniqueItems = Array.from(uniqueItemsMap.values()) as PortfolioItem[];
+
     return uniqueItems.sort((a, b) => b.createdAt - a.createdAt);
   } catch (error) {
     console.error("Gagal memuat data:", error);
@@ -37,7 +55,17 @@ export const savePortfolioItem = (item: PortfolioItem): boolean => {
     const localDataString = localStorage.getItem(LOCAL_STORAGE_KEY);
     const currentData = localDataString ? JSON.parse(localDataString) as PortfolioItem[] : [];
     
-    const newData = [item, ...currentData];
+    // Cek apakah item sudah ada di local storage, jika ya update, jika tidak tambah
+    const existingIndex = currentData.findIndex(d => d.id === item.id);
+    let newData;
+    
+    if (existingIndex >= 0) {
+        newData = [...currentData];
+        newData[existingIndex] = item;
+    } else {
+        newData = [item, ...currentData];
+    }
+
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newData));
     return true;
   } catch (error) {
@@ -48,16 +76,21 @@ export const savePortfolioItem = (item: PortfolioItem): boolean => {
 
 export const deletePortfolioItem = (id: string): void => {
   try {
+    // 1. Cek apakah ini item statis (dari file)
+    // @ts-ignore
+    const isStatic = STATIC_PORTFOLIO_DATA.some((item: any) => item.id === id);
+    
+    if (isStatic) {
+      alert("Item ini berasal dari file 'portfolioData.ts'. Untuk menghapusnya secara permanen, Anda harus menghapus kode item tersebut dari file 'portfolioData.ts' secara manual.");
+      return; 
+    }
+
+    // 2. Hapus dari Local Storage
     const localDataString = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (localDataString) {
       const currentData = JSON.parse(localDataString) as PortfolioItem[];
       const newData = currentData.filter(item => item.id !== id);
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newData));
-    }
-    // @ts-ignore
-    const isStatic = STATIC_PORTFOLIO_DATA.some(item => item.id === id);
-    if (isStatic) {
-      alert("Item ini berasal dari file statis dan tidak bisa dihapus permanen lewat browser.");
     }
   } catch (error) {
     console.error("Gagal menghapus data:", error);
@@ -79,15 +112,18 @@ const DEFAULT_PROFILE: UserProfile = {
 
 export const getUserProfile = (): UserProfile => {
   try {
-    // 1. Cek LocalStorage
+    // LOGIC BARU: Prioritaskan Data Statis (File)
+    
+    // 1. Cek Static Data (File) Terlebih Dahulu
+    // Jika user sudah mengisi STATIC_PROFILE_DATA di file, gunakan itu.
+    if (STATIC_PROFILE_DATA) {
+      return STATIC_PROFILE_DATA;
+    }
+
+    // 2. Jika File Kosong (null), baru Cek LocalStorage
     const localProfileString = localStorage.getItem(LOCAL_STORAGE_PROFILE_KEY);
     if (localProfileString) {
       return JSON.parse(localProfileString);
-    }
-
-    // 2. Cek Static Data (File)
-    if (STATIC_PROFILE_DATA) {
-      return STATIC_PROFILE_DATA;
     }
 
     // 3. Return Default Placeholder
