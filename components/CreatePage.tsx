@@ -93,6 +93,8 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
     }, 800);
   };
 
+  const isDataUrlImage = (url: string) => url.startsWith('data:image/');
+
   const renderMediaPreview = () => {
     if (!mediaUrl) return null;
 
@@ -115,9 +117,15 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
               <div className="w-2 h-2 rounded-full bg-red-400"></div>
               <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
               <div className="w-2 h-2 rounded-full bg-green-400"></div>
-              <div className="ml-2 bg-white text-[10px] text-slate-500 px-2 py-0.5 rounded flex-1 truncate">{mediaUrl}</div>
+              <div className="ml-2 bg-white text-[10px] text-slate-500 px-2 py-0.5 rounded flex-1 truncate">{mediaUrl.length > 100 ? 'Local Screenshot' : mediaUrl}</div>
             </div>
-            <iframe src={mediaUrl} className="w-full flex-1 border-0" title="Web Preview" />
+            {isDataUrlImage(mediaUrl) ? (
+              <div className="flex-1 overflow-hidden">
+                <img src={mediaUrl} alt="Web Screenshot" className="w-full h-full object-cover object-top" />
+              </div>
+            ) : (
+              <iframe src={mediaUrl} className="w-full flex-1 border-0" title="Web Preview" />
+            )}
           </div>
         )}
         
@@ -190,22 +198,26 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              {mediaType === 'certificate' ? 'Upload Gambar Sertifikat / URL' : 'Media URL / File'}
+              {mediaType === 'certificate' ? 'Upload Gambar Sertifikat / URL' : mediaType === 'web' ? 'URL Website / Screenshot' : 'Media URL / File'}
             </label>
             <input
               type="text"
               value={mediaUrl}
               onChange={(e) => setMediaUrl(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 mb-3 text-slate-900 dark:text-white text-sm"
-              placeholder="Paste URL atau pilih file di bawah"
+              placeholder={mediaType === 'web' ? "Paste URL (iframe) atau pilih screenshot di bawah" : "Paste URL atau pilih file di bawah"}
             />
 
-            {mediaType !== 'web' && (
-              <label className="inline-block cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-4 py-2 rounded-lg text-sm font-medium">
-                Pilih File Local
-                <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept={mediaType === 'image' || mediaType === 'certificate' ? "image/*" : mediaType === 'video' ? "video/*" : "audio/*"} />
-              </label>
-            )}
+            <label className="inline-block cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-4 py-2 rounded-lg text-sm font-medium">
+              Pilih File Local
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                onChange={handleFileUpload} 
+                accept={mediaType === 'image' || mediaType === 'certificate' || mediaType === 'web' ? "image/*" : mediaType === 'video' ? "video/*" : "audio/*"} 
+              />
+            </label>
             {renderMediaPreview()}
           </div>
 
