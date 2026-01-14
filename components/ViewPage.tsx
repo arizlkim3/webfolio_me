@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { PortfolioItem, UserProfile, MediaType } from '../types';
-import { getPortfolioData, deletePortfolioItem, getUserProfile } from '../services/storage';
+import { getPortfolioData, deletePortfolioItem, getUserProfile, toggleFeaturedItem } from '../services/storage';
 import Button from './Button';
 import ProfileSection from './ProfileSection';
 
@@ -10,13 +10,26 @@ interface ViewPageProps {
 }
 
 type ViewTab = 'gallery' | 'about';
+type GalleryViewMode = 'all' | 'categories';
+type ItemDisplayMode = 'grid' | 'list';
 
-// Konfigurasi Section Kategori
-const SECTIONS: { type: MediaType; label: string; description: string; icon: React.ReactNode }[] = [
+const SECTIONS: { type: MediaType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
+  { 
+    type: 'certificate', 
+    label: 'Sertifikat', 
+    description: 'Pencapaian profesional dan kursus.',
+    color: 'from-indigo-500 to-blue-600',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+      </svg>
+    )
+  },
   { 
     type: 'web', 
-    label: 'Proyek Website', 
+    label: 'Website', 
     description: 'Aplikasi web dan situs responsif.',
+    color: 'from-emerald-500 to-teal-600',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
@@ -25,8 +38,9 @@ const SECTIONS: { type: MediaType; label: string; description: string; icon: Rea
   },
   { 
     type: 'video', 
-    label: 'Video & Sinematik', 
-    description: 'Karya visual bergerak dan editing video.',
+    label: 'Video', 
+    description: 'Karya visual bergerak dan sinematik.',
+    color: 'from-rose-500 to-pink-600',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -35,8 +49,9 @@ const SECTIONS: { type: MediaType; label: string; description: string; icon: Rea
   },
   { 
     type: 'audio', 
-    label: 'Audio & Musik', 
-    description: 'Produksi suara, podcast, dan musik.',
+    label: 'Audio', 
+    description: 'Produksi suara dan musik.',
+    color: 'from-amber-500 to-orange-600',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
@@ -45,8 +60,9 @@ const SECTIONS: { type: MediaType; label: string; description: string; icon: Rea
   },
   { 
     type: 'image', 
-    label: 'Galeri Gambar', 
-    description: 'Fotografi, desain grafis, dan ilustrasi.',
+    label: 'Gambar', 
+    description: 'Fotografi dan desain grafis.',
+    color: 'from-violet-500 to-purple-600',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -55,110 +71,95 @@ const SECTIONS: { type: MediaType; label: string; description: string; icon: Rea
   }
 ];
 
-// --- Sub-Component: Media Item with Skeleton Loader ---
-const MediaItem: React.FC<{ item: PortfolioItem }> = ({ item }) => {
+const MediaItem: React.FC<{ item: PortfolioItem; isMinimal?: boolean; useZoomLoop?: boolean }> = ({ item, isMinimal, useZoomLoop }) => {
   const [isLoading, setIsLoading] = useState(true);
   const type = item.mediaType || 'image';
   const url = item.mediaUrl || '';
 
-  // Handle loading state completion
   const handleLoad = () => setIsLoading(false);
 
-  // Skeleton Loader Element
-  const Skeleton = () => (
-    <div className="absolute inset-0 z-10 bg-slate-200 dark:bg-slate-700 animate-pulse flex items-center justify-center">
-      <svg className="w-10 h-10 text-slate-300 dark:text-slate-600 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        {type === 'image' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />}
-        {type === 'video' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />}
-        {type === 'web' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />}
-        {type === 'audio' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />}
-      </svg>
+  if (type === 'certificate' || type === 'image') {
+    return (
+      <div className="w-full h-full relative bg-slate-100 dark:bg-slate-800 overflow-hidden">
+        <img 
+          src={url} 
+          alt={item.title} 
+          onLoad={handleLoad}
+          className={`w-full h-full object-cover transition-transform duration-[3000ms] ease-out 
+            ${useZoomLoop ? 'animate-slow-zoom' : 'group-hover:scale-125'} 
+            ${isLoading ? 'opacity-0' : 'opacity-100'}`} 
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
+       <div className={`p-4 bg-white/10 backdrop-blur-md rounded-full border border-white/20 transition-transform duration-[3000ms] group-hover:scale-125`}>
+          <svg className={`${isMinimal ? 'w-4 h-4' : 'w-10 h-10'} text-white/80`} fill="currentColor" viewBox="0 0 20 20">
+            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+            <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+          </svg>
+       </div>
     </div>
   );
+};
 
-  if (!url && type === 'image') {
-    return <div className="w-full h-full flex items-center justify-center text-slate-400 bg-slate-100 dark:bg-slate-800">No Image</div>;
-  }
+const FeaturedBanner: React.FC<{ items: PortfolioItem[] }> = ({ items }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  if (type === 'web') {
-    return (
-      <div className="w-full h-full bg-slate-50 dark:bg-slate-900 flex flex-col relative group">
-         {/* Web Header */}
-         <div className="bg-slate-200 dark:bg-slate-800 border-b border-slate-300 dark:border-slate-700 px-3 py-1.5 flex items-center gap-1.5 z-20">
-           <div className="w-2 h-2 rounded-full bg-red-400"></div>
-           <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-           <div className="w-2 h-2 rounded-full bg-green-400"></div>
-           <div className="ml-2 bg-white dark:bg-slate-900 text-[10px] text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded flex-1 truncate font-mono">
-             {url.replace(/(^\w+:|^)\/\//, '')}
-           </div>
-         </div>
-         
-         <div className="flex-1 relative bg-white overflow-hidden">
-           {isLoading && <Skeleton />}
-           <iframe 
-             src={url} 
-             onLoad={handleLoad}
-             className={`w-[200%] h-[200%] transform scale-50 origin-top-left border-0 pointer-events-none select-none transition-opacity duration-700 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-             title={`Preview of ${item.title}`}
-             sandbox="allow-scripts allow-same-origin"
-           />
-           <div className="absolute inset-0 bg-transparent z-10"></div>
-         </div>
-         
-         <div className="absolute top-2 right-2 bg-blue-600/80 text-white text-xs px-2 py-1 rounded backdrop-blur-sm pointer-events-none z-20">
-           Website
-         </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (items.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % items.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [items.length]);
 
-  if (type === 'video') {
-    return (
-      <div className="w-full h-full bg-black flex items-center justify-center relative group">
-         {isLoading && <Skeleton />}
-         <video 
-           src={url} 
-           onLoadedData={handleLoad}
-           controls 
-           className={`w-full h-full object-cover transition-opacity duration-700 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
-           preload="metadata"
-         />
-         <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm pointer-events-none z-20">
-           Video
-         </div>
-      </div>
-    );
-  }
+  if (items.length === 0) return null;
+  const activeItem = items[currentIndex];
 
-  if (type === 'audio') {
-    // Audio usually loads fast, but we show a placeholder design
-    return (
-      <div className="w-full h-full bg-slate-100 dark:bg-slate-800 flex flex-col items-center justify-center p-6 relative">
-         <div className="w-16 h-16 rounded-full bg-gradient-to-br from-secondary to-purple-600 flex items-center justify-center mb-4 shadow-lg animate-blob">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-            </svg>
-         </div>
-         <audio src={url} controls className="w-full z-10 relative" />
-         <div className="absolute top-2 right-2 bg-purple-600/80 text-white text-xs px-2 py-1 rounded backdrop-blur-sm pointer-events-none">
-           Audio
-         </div>
-      </div>
-    );
-  }
-
-  // Image Default
   return (
-    <div className="w-full h-full relative bg-slate-100 dark:bg-slate-800">
-      {isLoading && <Skeleton />}
-      <img 
-        src={url} 
-        alt={item.title} 
-        onLoad={handleLoad}
-        className={`w-full h-full object-cover transition-all duration-700 group-hover:scale-110 ${isLoading ? 'opacity-0' : 'opacity-100'}`} 
-        loading="lazy"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10"></div>
+    <div className="relative w-full h-[300px] md:h-[400px] rounded-[2.5rem] overflow-hidden mb-12 shadow-2xl animate-fade-in group border-4 border-white dark:border-slate-800">
+       <div className="absolute inset-0 bg-slate-200 dark:bg-slate-800">
+         <div key={activeItem.id} className="w-full h-full">
+            <MediaItem item={activeItem} useZoomLoop={true} />
+         </div>
+         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+       </div>
+
+       <div className="absolute bottom-0 left-0 p-8 md:p-12 w-full max-w-2xl z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-white text-[10px] font-black uppercase tracking-widest mb-4">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            Karya Unggulan
+          </div>
+          <h2 className="text-3xl md:text-5xl font-black text-white leading-none mb-3 drop-shadow-md transition-all duration-700">
+            {activeItem.title}
+          </h2>
+          <p className="text-white/70 text-sm md:text-base line-clamp-2 mb-6 max-w-xl transition-all duration-700">
+            {activeItem.description}
+          </p>
+          <div className="flex items-center gap-4">
+            <a href={activeItem.projectUrl || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-white font-black text-xs hover:bg-white hover:text-primary transition-all shadow-xl active:scale-95">
+              LIHAT KARYA
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+            </a>
+          </div>
+       </div>
+
+       {items.length > 1 && (
+         <div className="absolute bottom-6 right-10 flex gap-2 z-20">
+            {items.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentIndex(idx)}
+                className={`transition-all duration-500 rounded-full h-1.5 
+                  ${idx === currentIndex ? 'w-8 bg-primary shadow-[0_0_10px_rgba(99,102,241,0.5)]' : 'w-1.5 bg-white/30 hover:bg-white/60'}`}
+              />
+            ))}
+         </div>
+       )}
     </div>
   );
 };
@@ -168,389 +169,198 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ViewTab>('gallery');
-  const [showSubMenu, setShowSubMenu] = useState(false);
-  
-  // Search & Filter State
+  const [viewMode, setViewMode] = useState<GalleryViewMode>('all');
+  const [displayMode, setDisplayMode] = useState<ItemDisplayMode>('grid');
+  const [selectedCategory, setSelectedCategory] = useState<MediaType | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null);
 
-  // Load data automatically
   const loadData = () => {
     setLoading(true);
     setTimeout(() => {
-      const data = getPortfolioData();
-      const userProfile = getUserProfile();
-      setItems(data);
-      setProfile(userProfile);
+      setItems(getPortfolioData());
+      setProfile(getUserProfile());
       setLoading(false);
     }, 500);
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
-  // Extract unique tags from all items
   const allTags = useMemo(() => {
     const tags = new Set<string>();
-    items.forEach(item => {
-      item.tags.forEach(tag => tags.add(tag));
-    });
+    items.forEach(item => item.tags.forEach(tag => tags.add(tag)));
     return Array.from(tags).sort();
   }, [items]);
 
-  // Filter Logic
   const filteredItems = useMemo(() => {
     return items.filter(item => {
-      const matchesSearch = 
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        item.description.toLowerCase().includes(searchQuery.toLowerCase());
-      
+      const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || item.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesTag = selectedTag ? item.tags.includes(selectedTag) : true;
-
-      return matchesSearch && matchesTag;
+      const matchesCategory = selectedCategory ? (item.mediaType || 'image') === selectedCategory : true;
+      return matchesSearch && matchesTag && matchesCategory;
     });
-  }, [items, searchQuery, selectedTag]);
+  }, [items, searchQuery, selectedTag, selectedCategory]);
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus portofolio ini?')) {
+    if (window.confirm('Hapus portofolio ini secara permanen?')) {
       deletePortfolioItem(id);
-      // Reload items only
-      setTimeout(() => {
-         const data = getPortfolioData();
-         setItems(data);
-      }, 200);
+      setTimeout(() => setItems(getPortfolioData()), 200);
     }
   };
 
-  const scrollToItem = (itemId: string) => {
-    const element = document.getElementById(`item-${itemId}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setShowSubMenu(false);
-    }
+  const handleToggleFeatured = (id: string) => {
+    if (toggleFeaturedItem(id)) setItems(getPortfolioData());
   };
 
-  const handleDownloadJson = () => {
-    // Generate file content for 'data/portfolioData.ts'
-    const fileContent = `
-import { PortfolioItem, UserProfile } from '../types';
-
-/**
- * DATA PORTOFOLIO STATIS (Generated)
- * Copy kode ini dan paste (timpa) ke dalam file: 'data/portfolioData.ts'
- */
-
-export const STATIC_PORTFOLIO_DATA: PortfolioItem[] = ${JSON.stringify(items, null, 2)};
-
-export const STATIC_PROFILE_DATA: UserProfile | null = ${JSON.stringify(profile, null, 2)};
-    `;
-
-    const blob = new Blob([fileContent], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = "portfolioData.ts";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const getCount = (type: MediaType) => items.filter(i => (i.mediaType || 'image') === type).length;
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 md:h-12 md:w-12 border-b-2 border-primary mb-4"></div>
-        <p className="text-slate-500 dark:text-slate-400 text-sm md:text-base">Memuat portofolio...</p>
-      </div>
-    );
+    return <div className="flex items-center justify-center py-40"><div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div></div>;
   }
-
-  // Icons
-  const GalleryIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-    </svg>
-  );
-
-  const ProfileIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  );
 
   return (
     <div className="relative min-h-[80vh] animate-fade-in pb-24 md:pb-0">
       
-      {/* FLOATING NAVIGATION WIDGET (CENTER LEFT) - DESKTOP ONLY */}
+      {/* SIDE NAVIGATION */}
       <nav className="hidden md:flex flex-col gap-6 fixed left-6 top-1/2 -translate-y-1/2 z-50">
-        
-        {/* Gallery Button Container */}
-        <div 
-          className="relative group"
-          onMouseEnter={() => setShowSubMenu(true)}
-          onMouseLeave={() => setShowSubMenu(false)}
-        >
-          <button
-            onClick={() => setActiveTab('gallery')}
-            className={`flex items-center gap-3 p-4 rounded-2xl transition-all duration-300 shadow-xl ${
-              activeTab === 'gallery'
-                ? 'bg-primary text-white scale-110 shadow-primary/30'
-                : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-primary dark:hover:text-primary hover:scale-105'
-            }`}
-          >
-            <GalleryIcon />
-            {activeTab === 'gallery' && (
-              <span className="font-bold whitespace-nowrap pr-2 animate-fade-in">Galeri Karya</span>
-            )}
-          </button>
-
-          {/* FLYOUT SUBMENU (Right Side) */}
-          <div className={`absolute left-full top-0 ml-4 w-64 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-4 transition-all duration-300 origin-left ${
-            showSubMenu ? 'opacity-100 scale-100 translate-x-0 visible' : 'opacity-0 scale-95 -translate-x-4 invisible pointer-events-none'
-          }`}>
-             
-             <div className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 border-b border-slate-100 dark:border-slate-800 pb-2">
-                Daftar Portofolio
-             </div>
-             <div className="flex flex-col gap-1 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-                {items.length > 0 ? items.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      scrollToItem(item.id);
-                      setActiveTab('gallery');
-                    }}
-                    className="text-left text-sm text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary py-2 px-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 truncate transition-all duration-200"
-                  >
-                    {item.title}
-                  </button>
-                )) : (
-                   <div className="text-sm text-slate-400 italic px-2">Belum ada karya ditambahkan.</div>
-                )}
-             </div>
-          </div>
-        </div>
-
-        {/* Profile Button */}
-        <button
-          onClick={() => setActiveTab('about')}
-          className={`flex items-center gap-3 p-4 rounded-2xl transition-all duration-300 shadow-xl w-fit ${
-            activeTab === 'about'
-              ? 'bg-primary text-white scale-110 shadow-primary/30'
-              : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-primary dark:hover:text-primary hover:scale-105'
-          }`}
-        >
-          <ProfileIcon />
-          {activeTab === 'about' && (
-              <span className="font-bold whitespace-nowrap pr-2 animate-fade-in">Profil</span>
-          )}
+        <button onClick={() => setActiveTab('gallery')} className={`p-5 rounded-[1.5rem] transition-all shadow-xl border-2 ${activeTab === 'gallery' ? 'bg-primary text-white scale-110 shadow-primary/30 border-white' : 'bg-white dark:bg-slate-800 text-slate-400 border-transparent hover:text-primary'}`}>
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
         </button>
-
+        <button onClick={() => setActiveTab('about')} className={`p-5 rounded-[1.5rem] transition-all shadow-xl border-2 ${activeTab === 'about' ? 'bg-primary text-white scale-110 shadow-primary/30 border-white' : 'bg-white dark:bg-slate-800 text-slate-400 border-transparent hover:text-primary'}`}>
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+        </button>
       </nav>
 
-      {/* CONTENT AREA - Full Width */}
-      <div className="w-full min-w-0 transition-all duration-300">
+      <div className="w-full transition-all duration-300 md:pl-24">
         {activeTab === 'about' ? (
-          <div className="animate-fade-in max-w-5xl mx-auto">
-             {profile ? (
-               <ProfileSection profile={profile} />
-             ) : (
-               <div className="text-center py-12 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
-                 Profil belum diatur.
-               </div>
-             )}
-          </div>
+          <div className="animate-fade-in max-w-5xl mx-auto">{profile ? <ProfileSection profile={profile} /> : <div>Profil belum diatur.</div>}</div>
         ) : (
-          <div className="animate-fade-in md:pl-20">
-            {/* Header Gallery */}
-            <div className="flex flex-col gap-6 mb-6 md:mb-10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-6 rounded-2xl border border-slate-200/50 dark:border-slate-800/50">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div className=""> 
-                  <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3 mb-2">
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Galeri Portofolio</span>
-                    <span className="text-xs md:text-sm bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 py-1 px-3 rounded-full font-normal border border-slate-200 dark:border-slate-700">
-                      {filteredItems.length}
-                    </span>
-                  </h2>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-lg">
-                    Kumpulan proyek terbaik dan karya kreatif terbaru.
-                  </p>
-                </div>
-
-                {/* Export Button for Creator */}
-                {isCreator && (
-                  <Button 
-                    variant="secondary" 
-                    onClick={handleDownloadJson}
-                    className="flex items-center justify-center gap-2 w-full md:w-auto text-sm py-2.5"
-                    title="Download JSON untuk dimasukkan ke folder proyek"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          <div className="animate-fade-in">
+            
+            {/* Toolbar - Stronger Glass Effect */}
+            <div className="flex flex-col gap-6 mb-12 bg-white/10 dark:bg-slate-900/40 backdrop-blur-3xl p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-white/20 dark:border-slate-800/50 shadow-xl">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                <div className="flex-1 flex gap-4 items-start">
+                  {/* Smaller Gallery Icon Alignment */}
+                  <div className="shrink-0 p-2.5 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-inner mt-1 backdrop-blur-md">
+                    <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    Download Data
-                  </Button>
-                )}
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-3xl md:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary leading-none uppercase">Galeri</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-[10px] md:text-xs max-w-2xl mt-2 font-medium leading-relaxed">
+                       Tempat ide-ide bertemu eksekusi. Silakan telusuri jejak kreativitas saya.
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Control Toggles - Side by Side (Horizontal) Always */}
+                <div className="flex flex-row items-center justify-between w-full md:w-auto gap-3">
+                  {/* Category Toggle */}
+                  <div className="flex bg-slate-500/10 dark:bg-slate-400/10 p-1 rounded-2xl border border-white/10 dark:border-slate-700/50 backdrop-blur-md flex-1 md:flex-none">
+                    <button onClick={() => { setViewMode('all'); setSelectedCategory(null); }} className={`flex-1 md:px-5 py-2.5 rounded-xl text-[10px] font-black transition-all ${viewMode === 'all' && !selectedCategory ? 'bg-white dark:bg-slate-700 text-primary shadow-lg ring-1 ring-slate-200 dark:ring-slate-600' : 'text-slate-500'}`}>SEMUA</button>
+                    <button onClick={() => setViewMode('categories')} className={`flex-1 md:px-5 py-2.5 rounded-xl text-[10px] font-black transition-all ${viewMode === 'categories' || selectedCategory ? 'bg-white dark:bg-slate-700 text-primary shadow-lg ring-1 ring-slate-200 dark:ring-slate-600' : 'text-slate-500'}`}>KATEGORI</button>
+                  </div>
+                  
+                  {/* View Mode Toggle */}
+                  <div className="flex bg-slate-500/10 dark:bg-slate-400/10 p-1 rounded-2xl border border-white/10 dark:border-slate-700/50 backdrop-blur-md">
+                    <button onClick={() => setDisplayMode('grid')} className={`p-2.5 rounded-xl transition-all ${displayMode === 'grid' ? 'bg-white dark:bg-slate-700 text-primary shadow-lg ring-1 ring-slate-200 dark:ring-slate-600' : 'text-slate-400'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg></button>
+                    <button onClick={() => setDisplayMode('list')} className={`p-2.5 rounded-xl transition-all ${displayMode === 'list' ? 'bg-white dark:bg-slate-700 text-primary shadow-lg ring-1 ring-slate-200 dark:ring-slate-600' : 'text-slate-400'}`}><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg></button>
+                  </div>
+                </div>
               </div>
 
-              {/* SEARCH & FILTER BAR */}
-              <div className="flex flex-col md:flex-row gap-4 border-t border-slate-200 dark:border-slate-700 pt-4">
-                
-                {/* Search Input */}
-                <div className="relative flex-shrink-0 w-full md:w-64">
-                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                     <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                     </svg>
-                   </div>
-                   <input
-                     type="text"
-                     value={searchQuery}
-                     onChange={(e) => setSearchQuery(e.target.value)}
-                     className="block w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl leading-5 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm transition-all"
-                     placeholder="Cari judul atau deskripsi..."
-                   />
-                </div>
-
-                {/* Tags Filter (Horizontal Scroll) */}
-                <div className="flex-1 flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
-                   <button
-                      onClick={() => setSelectedTag(null)}
-                      className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
-                        selectedTag === null
-                          ? 'bg-primary text-white border-primary'
-                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
-                      }`}
-                   >
-                     Semua
-                   </button>
-                   {allTags.map((tag) => (
-                     <button
-                       key={tag}
-                       onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
-                       className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
-                         selectedTag === tag
-                           ? 'bg-primary text-white border-primary'
-                           : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
-                       }`}
-                     >
-                       #{tag}
-                     </button>
-                   ))}
+              <div className="flex flex-col md:flex-row gap-4 border-t border-white/10 dark:border-slate-800/50 pt-6">
+                <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full md:w-80 pl-6 pr-4 py-3 bg-white/20 dark:bg-slate-800 border border-white/20 dark:border-slate-700 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-primary/20 backdrop-blur-md" placeholder="Cari karya..." />
+                <div className="flex-1 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                   <button onClick={() => setSelectedTag(null)} className={`px-5 py-2.5 rounded-full text-[10px] font-black border transition-all ${selectedTag === null ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white/30 dark:bg-slate-800 border-white/20 dark:border-slate-700 text-slate-500 backdrop-blur-md'}`}>SEMUA</button>
+                   {allTags.map(tag => <button key={tag} onClick={() => setSelectedTag(tag === selectedTag ? null : tag)} className={`px-5 py-2.5 rounded-full text-[10px] font-black border transition-all whitespace-nowrap ${selectedTag === tag ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' : 'bg-white/30 dark:bg-slate-800 border-white/20 dark:border-slate-700 text-slate-500 backdrop-blur-md'}`}>#{tag.toUpperCase()}</button>)}
                 </div>
               </div>
             </div>
 
-            {filteredItems.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center bg-white dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm mx-auto">
-                <div className="bg-slate-100 dark:bg-slate-800 p-6 rounded-full mb-6">
-                  {searchQuery || selectedTag ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  ) : (
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                     </svg>
-                  )}
-                </div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                  {searchQuery || selectedTag ? 'Tidak ditemukan' : 'Belum ada Portofolio'}
-                </h3>
-                <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md px-4">
-                  {searchQuery || selectedTag 
-                     ? `Tidak ada hasil untuk pencarian "${searchQuery}" ${selectedTag ? `dengan tag #${selectedTag}` : ''}.` 
-                     : isCreator 
-                        ? "Mulai tambahkan karya Anda di halaman Buat." 
-                        : "Pemilik belum menambahkan portofolio."
-                  }
-                </p>
-                {(searchQuery || selectedTag) && (
-                   <button 
-                     onClick={() => {setSearchQuery(''); setSelectedTag(null);}}
-                     className="mt-4 text-primary font-medium hover:underline text-sm"
-                   >
-                     Reset Pencarian
-                   </button>
-                )}
+            {/* Main Area */}
+            {viewMode === 'categories' && !selectedCategory ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in">
+                {SECTIONS.map((section) => (
+                  <button key={section.type} onClick={() => setSelectedCategory(section.type)} className="group relative aspect-square rounded-[2.5rem] overflow-hidden shadow-xl border-4 border-white dark:border-slate-800 transition-all hover:scale-[1.03] active:scale-95">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${section.color} opacity-90 group-hover:opacity-100 transition-opacity`}></div>
+                    <div className="relative h-full p-10 flex flex-col justify-between text-white text-left">
+                       <div className="flex justify-between items-start">
+                          <div className="p-4 bg-white/20 backdrop-blur-md rounded-2xl shadow-inner">{section.icon}</div>
+                          <span className="text-4xl font-black opacity-20">{getCount(section.type)}</span>
+                       </div>
+                       <div>
+                          <h3 className="text-2xl font-black mb-1 leading-none">{section.label}</h3>
+                          <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest">{section.description}</p>
+                       </div>
+                    </div>
+                  </button>
+                ))}
               </div>
+            ) : filteredItems.length === 0 ? (
+              <div className="text-center py-32 bg-white/10 dark:bg-slate-800/10 rounded-[2.5rem] border-4 border-dashed border-white/20 dark:border-slate-700"><p className="text-slate-400 font-black italic uppercase tracking-widest">Data Kosong</p></div>
             ) : (
-              <div className="space-y-12">
+              <div className="space-y-20">
+                {selectedCategory && (
+                  <div className="flex items-center gap-5 mb-10"><button onClick={() => { setSelectedCategory(null); setViewMode('categories'); }} className="p-4 rounded-full bg-white/20 dark:bg-slate-800 border border-white/20 dark:border-slate-700 text-slate-500 hover:text-primary transition-all shadow-md backdrop-blur-md"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg></button><h3 className="text-3xl font-black tracking-tighter">{SECTIONS.find(s => s.type === selectedCategory)?.label}</h3></div>
+                )}
                 {SECTIONS.map((section) => {
-                  const sectionItems = filteredItems
-                    .filter(item => (item.mediaType || 'image') === section.type)
-                    .sort((a, b) => a.title.localeCompare(b.title));
-
+                  if (selectedCategory && selectedCategory !== section.type) return null;
+                  
+                  const sectionItems = filteredItems.filter(item => (item.mediaType || 'image') === section.type);
                   if (sectionItems.length === 0) return null;
+
+                  const sectionFeaturedItems = sectionItems.filter(i => i.isFeatured);
 
                   return (
                     <div key={section.type} className="animate-fade-in">
-                      <div className="flex items-center gap-3 mb-6 border-b border-slate-200 dark:border-slate-800 pb-4">
-                        <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg text-primary">
-                          {section.icon}
+                      {!selectedCategory && (
+                        <div className="flex items-center gap-4 mb-10 border-b-4 border-white/20 dark:border-slate-800 pb-6">
+                           <div className="p-3 bg-primary/10 rounded-2xl text-primary backdrop-blur-md border border-primary/10">{section.icon}</div>
+                           <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">{section.label}</h3>
                         </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                            {section.label}
-                          </h3>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">{section.description}</p>
-                        </div>
-                        <span className="ml-auto bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold px-2.5 py-0.5 rounded">
-                          {sectionItems.length}
-                        </span>
-                      </div>
+                      )}
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                      {(!selectedTag && !searchQuery) && sectionFeaturedItems.length > 0 && (
+                        <FeaturedBanner items={sectionFeaturedItems} />
+                      )}
+
+                      <div className={displayMode === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10" : "flex flex-wrap gap-4"}>
                         {sectionItems.map((item) => (
-                          <div id={`item-${item.id}`} key={item.id} className="group bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden hover:shadow-2xl hover:shadow-primary/10 transition-all duration-300 flex flex-col h-full hover:-translate-y-1 shadow-md shadow-slate-200/50 dark:shadow-none scroll-mt-32">
-                            
-                            <div className="h-48 md:h-56 overflow-hidden relative bg-slate-100 dark:bg-slate-800">
-                              <MediaItem item={item} />
-                            </div>
+                          displayMode === 'grid' ? (
+                            <div key={item.id} onClick={() => setSelectedItem(item)} className="group relative aspect-square rounded-[2.5rem] overflow-hidden shadow-2xl transition-all duration-500 border-4 border-white dark:border-slate-800 cursor-pointer hover:shadow-primary/20">
+                               <div className="absolute inset-0 bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                                  <MediaItem item={item} />
+                               </div>
+                               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent transition-opacity group-hover:opacity-90"></div>
+                               
+                               <div className="absolute top-5 right-5 z-20 flex gap-2">
+                                  {isCreator && (
+                                    <button onClick={(e) => { e.stopPropagation(); handleToggleFeatured(item.id); }} className={`p-3 rounded-2xl backdrop-blur-md shadow-lg transition-all ${item.isFeatured ? 'bg-red-500 text-white' : 'bg-white/20 text-white hover:bg-white/40'}`}><svg className="w-5 h-5" fill={item.isFeatured ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg></button>
+                                  )}
+                               </div>
 
-                            <div className="p-5 md:p-6 flex flex-col flex-grow">
-                              <h3 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-2 line-clamp-1">{item.title}</h3>
-                              <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 line-clamp-3 flex-grow leading-relaxed">{item.description}</p>
-                              
-                              <div className="flex flex-wrap gap-2 mb-6">
-                                {item.tags.map((tag, idx) => (
-                                  <button 
-                                    key={idx} 
-                                    onClick={() => setSelectedTag(tag === selectedTag ? null : tag)}
-                                    className={`text-xs font-medium px-2 py-1 rounded-md transition-colors ${
-                                       selectedTag === tag 
-                                       ? 'bg-primary text-white' 
-                                       : 'bg-slate-100 dark:bg-slate-800 text-primary hover:bg-slate-200 dark:hover:bg-slate-700'
-                                    }`}
-                                  >
-                                    #{tag}
-                                  </button>
-                                ))}
-                              </div>
-
-                              <div className="flex items-center gap-3 mt-auto pt-4 border-t border-slate-100 dark:border-slate-700">
-                                {item.projectUrl ? (
-                                  <a href={item.projectUrl} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-2.5 px-4 rounded-lg bg-slate-800 dark:bg-slate-700 text-white hover:bg-slate-700 text-sm font-medium transition-colors">
-                                    Lihat Proyek
-                                  </a>
-                                ) : (
-                                  <span className="flex-1 text-center py-2.5 px-4 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 text-sm cursor-not-allowed">
-                                    No Link
-                                  </span>
-                                )}
-                                
-                                {isCreator && (
-                                  <button onClick={() => handleDelete(item.id)} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                                    </svg>
-                                  </button>
-                                )}
-                              </div>
+                               <div className="absolute bottom-0 left-0 p-8 w-full">
+                                  <div className="flex gap-2 mb-3">
+                                     {item.tags.slice(0, 2).map(tag => <span key={tag} className="px-2 py-0.5 bg-white/10 backdrop-blur-md rounded-lg text-[8px] font-black text-white/80 uppercase">#{tag}</span>)}
+                                  </div>
+                                  <h3 className="text-2xl font-black text-white mb-2 leading-none group-hover:text-primary transition-colors">{item.title}</h3>
+                                  <p className="text-white/60 text-xs line-clamp-2 mb-5 font-medium leading-relaxed">{item.description}</p>
+                                  <div className="flex items-center gap-3">
+                                     <span className="text-[10px] font-black text-primary bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/10">LIHAT DETAIL →</span>
+                                  </div>
+                               </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div key={item.id} onClick={() => setSelectedItem(item)} className="group relative flex items-center gap-4 bg-white/30 dark:bg-slate-800/50 backdrop-blur-md pl-2 pr-6 py-2 border-2 border-white/20 dark:border-slate-700 rounded-full hover:border-primary hover:shadow-xl transition-all cursor-pointer active:scale-95 shadow-sm">
+                               <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 border-2 border-white/20 dark:border-slate-700 shadow-inner"><MediaItem item={item} isMinimal={true} /></div>
+                               <div className="flex flex-col min-w-0"><span className="text-xs font-black text-slate-900 dark:text-white truncate max-w-[150px] uppercase tracking-tight">{item.title}</span><span className="text-[9px] font-bold text-primary">Detail Karya →</span></div>
+                               {isCreator && <div className="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={(e) => { e.stopPropagation(); handleToggleFeatured(item.id); }} className={`p-2 rounded-full ${item.isFeatured ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-red-500'}`}><svg className="w-4 h-4" fill={item.isFeatured ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg></button><button onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full"><svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button></div>}
+                            </div>
+                          )
                         ))}
                       </div>
                     </div>
@@ -562,54 +372,53 @@ export const STATIC_PROFILE_DATA: UserProfile | null = ${JSON.stringify(profile,
         )}
       </div>
 
-      {/* MOBILE BOTTOM FLOATING DOCK (ONLY FOR GUEST, HIDDEN IF CREATOR) */}
+      {/* DETAIL MODAL */}
+      {selectedItem && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-lg animate-fade-in" onClick={() => setSelectedItem(null)}>
+           <div className="w-full max-w-2xl aspect-square bg-white dark:bg-slate-800 rounded-[3rem] overflow-hidden shadow-[0_35px_60px_-15px_rgba(0,0,0,0.6)] border-4 border-white dark:border-slate-800 relative animate-fade-in-up group" onClick={(e) => e.stopPropagation()}>
+              
+              <div className="absolute inset-0 z-0 bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                <MediaItem item={selectedItem} />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+              </div>
+
+              <button onClick={() => setSelectedItem(null)} className="absolute top-8 right-8 z-50 p-4 rounded-full bg-black/30 text-white hover:bg-black/60 transition-all backdrop-blur-md border border-white/20 shadow-xl"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+
+              <div className="absolute bottom-0 left-0 p-10 md:p-16 w-full z-10 flex flex-col items-start">
+                 <div className="flex gap-2 mb-6">
+                    <span className="px-4 py-1.5 bg-primary text-white text-[10px] font-black uppercase rounded-full shadow-lg ring-2 ring-white/20">{selectedItem.mediaType}</span>
+                    {selectedItem.isFeatured && <span className="px-4 py-1.5 bg-red-500 text-white text-[10px] font-black uppercase rounded-full shadow-lg ring-2 ring-white/20">Featured</span>}
+                 </div>
+
+                 <h2 className="text-4xl md:text-5xl font-black text-white leading-none mb-4 drop-shadow-2xl">{selectedItem.title}</h2>
+                 <p className="text-white/80 text-sm md:text-base leading-relaxed mb-10 max-w-2xl line-clamp-3 font-medium">{selectedItem.description}</p>
+
+                 <div className="flex flex-wrap gap-2 mb-10">
+                    {selectedItem.tags.map(tag => <span key={tag} className="px-5 py-2 bg-white/10 backdrop-blur-md text-white text-[10px] font-black rounded-full border border-white/20">#{tag.toUpperCase()}</span>)}
+                 </div>
+
+                 <div className="flex w-full gap-4">
+                    {selectedItem.projectUrl ? (
+                      <a href={selectedItem.projectUrl} target="_blank" rel="noopener noreferrer" className="flex-1 text-center py-5 bg-white text-slate-900 rounded-[1.5rem] font-black text-sm uppercase tracking-widest shadow-[0_10px_30px_-5px_rgba(255,255,255,0.3)] hover:bg-primary hover:text-white transition-all active:scale-95">BUKA KARYA SEKARANG</a>
+                    ) : (
+                      <div className="flex-1 text-center py-5 bg-white/10 backdrop-blur-md text-white/40 border border-white/10 rounded-[1.5rem] font-black text-sm uppercase">TAUTAN TIDAK TERSEDIA</div>
+                    )}
+                    {isCreator && (
+                      <button onClick={(e) => { e.stopPropagation(); handleDelete(selectedItem.id); setSelectedItem(null); }} className="p-5 bg-red-500/20 backdrop-blur-md text-red-500 rounded-[1.5rem] border border-red-500/30 hover:bg-red-500 hover:text-white transition-all shadow-lg active:scale-95"><svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>
+                    )}
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* MOBILE NAV */}
       {!isCreator && (
-        <nav className="md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border border-slate-200/50 dark:border-slate-700/50 rounded-2xl shadow-2xl z-50 p-2 flex justify-between items-center px-6">
-          <button
-            onClick={() => setActiveTab('gallery')}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300 ${
-              activeTab === 'gallery'
-                ? 'text-primary bg-primary/10'
-                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
-            }`}
-          >
-            <GalleryIcon />
-            <span className="text-[10px] font-semibold mt-1">Galeri</span>
-          </button>
-
-          <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 mx-2"></div>
-
-          <button
-            onClick={() => setActiveTab('about')}
-            className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300 ${
-              activeTab === 'about'
-                ? 'text-primary bg-primary/10'
-                : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
-            }`}
-          >
-            <ProfileIcon />
-            <span className="text-[10px] font-semibold mt-1">Profil</span>
-          </button>
+        <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] bg-white/30 dark:bg-slate-900/40 backdrop-blur-xl border-4 border-white/20 dark:border-slate-800 rounded-[2rem] shadow-2xl z-50 p-3 flex justify-around items-center">
+          <button onClick={() => setActiveTab('gallery')} className={`p-4 rounded-2xl transition-all ${activeTab === 'gallery' ? 'text-primary bg-primary/20 ring-1 ring-primary/20' : 'text-slate-400'}`}><svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg></button>
+          <button onClick={() => setActiveTab('about')} className={`p-4 rounded-2xl transition-all ${activeTab === 'about' ? 'text-primary bg-primary/20 ring-1 ring-primary/20' : 'text-slate-400'}`}><svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></button>
         </nav>
       )}
-      
-      {/* Scrollbar Custom Style for Flyout */}
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-          height: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 4px;
-        }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #475569;
-        }
-      `}</style>
     </div>
   );
 };

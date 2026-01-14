@@ -95,12 +95,12 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
 
   const removeExperience = (id: string) => {
     if (!profile) return;
-    setProfile({ ...profile, experience: profile.experience.filter(e => e.id !== id) });
+    setProfile({ ...profile, experience: profile.experience.filter(exp => exp.id !== id) });
   };
 
   const updateExperience = (id: string, field: keyof Experience, value: string) => {
     if (!profile) return;
-    const updatedExp = profile.experience.map(e => e.id === id ? { ...e, [field]: value } : e);
+    const updatedExp = profile.experience.map(exp => exp.id === id ? { ...exp, [field]: value } : exp);
     setProfile({ ...profile, experience: updatedExp });
   };
 
@@ -264,8 +264,21 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
               </div>
               
               <div>
-                <label className="label">Nomor Telepon / WhatsApp</label>
+                <label className="label">Nomor Telepon</label>
                 <input type="tel" value={profile.phone || ''} onChange={(e) => handleChange('phone', e.target.value)} className="input-field" placeholder="0812-xxxx-xxxx" />
+              </div>
+
+              <div>
+                <label className="label flex items-center gap-2">
+                  <span className="text-green-500 font-bold">WhatsApp</span> Nomor (Tanpa '+')
+                </label>
+                <input 
+                  type="text" 
+                  value={profile.socials?.whatsapp || ''} 
+                  onChange={(e) => handleSocialChange('whatsapp', e.target.value)} 
+                  className="input-field" 
+                  placeholder="Contoh: 6281476655793" 
+                />
               </div>
 
               <div>
@@ -306,23 +319,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
                   placeholder="https://instagram.com/username" 
                 />
               </div>
-
-              <div>
-                <label className="label flex items-center gap-2">
-                  <span className="text-blue-400">Twitter / X</span> URL
-                </label>
-                <input 
-                  type="url" 
-                  value={profile.socials?.twitter || ''} 
-                  onChange={(e) => handleSocialChange('twitter', e.target.value)} 
-                  className="input-field" 
-                  placeholder="https://twitter.com/username" 
-                />
-              </div>
             </div>
           </div>
 
-          {/* Section: Keahlian (Skills) - Updated with Slider */}
+          {/* Section: Keahlian (Skills) */}
           <div className="space-y-4">
              <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
                 <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Keahlian & Kemahiran</h3>

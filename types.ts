@@ -1,5 +1,5 @@
 
-export type MediaType = 'image' | 'video' | 'audio' | 'web';
+export type MediaType = 'image' | 'video' | 'audio' | 'web' | 'certificate';
 
 export interface PortfolioItem {
   id: string;
@@ -10,6 +10,7 @@ export interface PortfolioItem {
   projectUrl: string;
   tags: string[];
   createdAt: number;
+  isFeatured?: boolean; // Properti baru untuk karya terbaik/unggulan
 }
 
 export interface Education {
@@ -39,6 +40,7 @@ export interface SocialLinks {
   instagram?: string;
   twitter?: string;
   website?: string;
+  whatsapp?: string; // Properti baru untuk WhatsApp
 }
 
 export interface UserProfile {
