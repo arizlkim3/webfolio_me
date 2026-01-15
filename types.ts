@@ -41,6 +41,7 @@ export interface SocialLinks {
   twitter?: string;
   website?: string;
   whatsapp?: string; // Properti baru untuk WhatsApp
+  vercel?: string; // Properti baru untuk Vercel
 }
 
 export interface UserProfile {

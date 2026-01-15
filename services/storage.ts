@@ -2,6 +2,63 @@
 import { PortfolioItem, UserProfile, LOCAL_STORAGE_KEY, LOCAL_STORAGE_PROFILE_KEY, Skill } from '../types';
 import { STATIC_PORTFOLIO_DATA, STATIC_PROFILE_DATA } from '../data/portfolioData';
 
+// --- IMAGE OPTIMIZATION UTILITY ---
+
+/**
+ * Mengompres gambar menggunakan Canvas API
+ * @param file File gambar asli
+ * @param maxWidth Lebar maksimal
+ * @param maxHeight Tinggi maksimal
+ * @param quality Kualitas (0.0 - 1.0)
+ */
+export const compressImage = (
+  file: File, 
+  maxWidth: number = 1200, 
+  maxHeight: number = 1200, 
+  quality: number = 0.7
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        // Hitung rasio aspek
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas context not available'));
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Export sebagai JPEG dengan kompresi
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = (err) => reject(err);
+    };
+    reader.onerror = (err) => reject(err);
+  });
+};
+
 // --- PORTFOLIO ITEMS ---
 
 export const getPortfolioData = (): PortfolioItem[] => {
@@ -9,10 +66,8 @@ export const getPortfolioData = (): PortfolioItem[] => {
     const localDataString = localStorage.getItem(LOCAL_STORAGE_KEY);
     const localItems = localDataString ? (JSON.parse(localDataString) as PortfolioItem[]) : [];
     
-    // Gunakan Map untuk menggabungkan data. ID yang sama di local akan menimpa data statis.
     const itemsMap = new Map<string, PortfolioItem>();
     
-    // 1. Masukkan data statis terlebih dahulu
     (STATIC_PORTFOLIO_DATA as any[]).forEach(item => {
       itemsMap.set(item.id, {
         ...item,
@@ -25,15 +80,13 @@ export const getPortfolioData = (): PortfolioItem[] => {
       });
     });
 
-    // 2. Timpa atau tambahkan dengan data dari LocalStorage
     localItems.forEach(item => {
       itemsMap.set(item.id, {
         ...item,
-        isFeatured: !!item.isFeatured // Pastikan tipe boolean
+        isFeatured: !!item.isFeatured
       });
     });
 
-    // Konversi Map kembali ke Array dan urutkan berdasarkan waktu pembuatan terbaru
     return Array.from(itemsMap.values()).sort((a, b) => b.createdAt - a.createdAt);
   } catch (error) {
     console.error("Gagal memuat data:", error);
@@ -71,13 +124,11 @@ export const toggleFeaturedItem = (id: string): boolean => {
     
     if (!itemToToggle) return false;
 
-    // Toggle status
     const updatedItem = { 
       ...itemToToggle, 
       isFeatured: !itemToToggle.isFeatured 
     };
 
-    // Simpan ke LocalStorage sebagai override
     const localDataString = localStorage.getItem(LOCAL_STORAGE_KEY);
     let localData = localDataString ? JSON.parse(localDataString) as PortfolioItem[] : [];
     
@@ -98,7 +149,6 @@ export const toggleFeaturedItem = (id: string): boolean => {
 
 export const deletePortfolioItem = (id: string): void => {
   try {
-    // Cek apakah ini data statis
     const isStatic = (STATIC_PORTFOLIO_DATA as any[]).some(item => item.id === id);
     
     if (isStatic) {

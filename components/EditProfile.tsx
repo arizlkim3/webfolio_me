@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { UserProfile, Education, Experience, Skill, SocialLinks } from '../types';
-import { getUserProfile, saveUserProfile } from '../services/storage';
+import { getUserProfile, saveUserProfile, compressImage } from '../services/storage';
 import Button from './Button';
 
 interface EditProfileProps {
@@ -11,12 +11,12 @@ interface EditProfileProps {
 const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const data = getUserProfile();
-    // Ensure socials object exists
     if (!data.socials) {
       data.socials = {};
     }
@@ -40,24 +40,20 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
   };
 
   // --- Avatar Handlers ---
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Limit size to 1MB to prevent LocalStorage quota exceeded errors
-      if (file.size > 1024 * 1024) {
-        setMessage({ type: 'error', text: 'Ukuran foto terlalu besar. Maksimal 1MB.' });
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        return;
+    if (file && profile) {
+      setIsOptimizing(true);
+      setMessage(null);
+      try {
+        // Kompres avatar ke ukuran kecil (maks 400px) karena hanya avatar
+        const optimizedAvatar = await compressImage(file, 400, 400, 0.8);
+        setProfile({ ...profile, avatarUrl: optimizedAvatar });
+      } catch (err) {
+        setMessage({ type: 'error', text: 'Gagal memproses foto profil.' });
+      } finally {
+        setIsOptimizing(false);
       }
-
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (profile) {
-          setProfile({ ...profile, avatarUrl: reader.result as string });
-          setMessage(null);
-        }
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -129,7 +125,6 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
 
     setIsSaving(true);
     
-    // Filter empty skills
     const updatedProfile: UserProfile = {
       ...profile,
       skills: profile.skills.filter(s => s.name.trim().length > 0)
@@ -143,7 +138,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
         setMessage({ type: 'success', text: 'Profil berhasil disimpan!' });
         setTimeout(() => onSuccess(), 1000);
       } else {
-        setMessage({ type: 'error', text: 'Gagal menyimpan profil (Storage Penuh). Coba kurangi ukuran foto.' });
+        setMessage({ type: 'error', text: 'Gagal menyimpan profil. Memori penyimpanan penuh.' });
       }
     }, 800);
   };
@@ -168,8 +163,10 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
           {/* Section: Foto Profil */}
           <div className="flex flex-col md:flex-row items-center gap-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
             <div className="relative group">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700 shadow-md ring-4 ring-white dark:ring-slate-800">
-                {profile.avatarUrl ? (
+              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700 shadow-md ring-4 ring-white dark:ring-slate-800 flex items-center justify-center">
+                {isOptimizing ? (
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                ) : profile.avatarUrl ? (
                   <img src={profile.avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-500">
@@ -184,20 +181,21 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
             <div className="flex flex-col gap-3 text-center md:text-left">
               <div>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Foto Profil</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Format: JPG, PNG. Maksimal 1MB.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Optimasi otomatis aktif. Hasil akan dikompres.</p>
               </div>
               <div className="flex gap-3 justify-center md:justify-start">
-                <label className="cursor-pointer bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
-                  Ubah Foto
+                <label className={`cursor-pointer bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm ${isOptimizing ? 'opacity-50 pointer-events-none' : ''}`}>
+                  {isOptimizing ? 'Memproses...' : 'Ubah Foto'}
                   <input 
                     type="file" 
                     ref={fileInputRef}
                     className="hidden" 
                     accept="image/*"
                     onChange={handleAvatarChange}
+                    disabled={isOptimizing}
                   />
                 </label>
-                {profile.avatarUrl && (
+                {profile.avatarUrl && !isOptimizing && (
                   <button 
                     type="button" 
                     onClick={handleRemoveAvatar}
@@ -319,6 +317,19 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
                   placeholder="https://instagram.com/username" 
                 />
               </div>
+
+              <div>
+                <label className="label flex items-center gap-2">
+                  <span className="text-slate-900 dark:text-white">Vercel</span> URL
+                </label>
+                <input 
+                  type="url" 
+                  value={profile.socials?.vercel || ''} 
+                  onChange={(e) => handleSocialChange('vercel', e.target.value)} 
+                  className="input-field" 
+                  placeholder="https://vercel.com/username" 
+                />
+              </div>
             </div>
           </div>
 
@@ -411,8 +422,8 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
           </div>
 
           <div className="pt-4 flex gap-4">
-            <Button type="button" variant="secondary" onClick={onSuccess} className="w-1/3">Batal</Button>
-            <Button type="submit" isLoading={isSaving} className="w-2/3">Simpan Perubahan</Button>
+            <Button type="button" variant="secondary" onClick={onSuccess} className="w-1/3" disabled={isOptimizing}>Batal</Button>
+            <Button type="submit" isLoading={isSaving} className="w-2/3" disabled={isOptimizing}>Simpan Perubahan</Button>
           </div>
         </form>
       </div>

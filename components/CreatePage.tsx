@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { PortfolioItem, MediaType } from '../types';
-import { savePortfolioItem } from '../services/storage';
+import { savePortfolioItem, compressImage } from '../services/storage';
 import Button from './Button';
 
 interface CreatePageProps {
@@ -16,27 +16,49 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
   const [mediaType, setMediaType] = useState<MediaType>('image');
   const [mediaUrl, setMediaUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const limit = 3 * 1024 * 1024; // 3MB
+      const limit = 10 * 1024 * 1024; // 10MB limit untuk input (akan dikompres)
       
       if (file.size > limit) {
-        setMessage({ type: 'error', text: 'Ukuran file terlalu besar (Maks 3MB).' });
+        setMessage({ type: 'error', text: 'Ukuran file terlalu besar (Maks 10MB sebelum optimasi).' });
         if (fileInputRef.current) fileInputRef.current.value = '';
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setMediaUrl(reader.result as string);
+      // Optimasi hanya untuk tipe visual
+      if (file.type.startsWith('image/') && (mediaType === 'image' || mediaType === 'certificate' || mediaType === 'web')) {
+        setIsOptimizing(true);
         setMessage(null);
-      };
-      
-      reader.readAsDataURL(file);
+        try {
+          // Kompres ke maks 1200px dengan kualitas 0.7
+          const optimizedBase64 = await compressImage(file, 1200, 1200, 0.7);
+          setMediaUrl(optimizedBase64);
+        } catch (err) {
+          setMessage({ type: 'error', text: 'Gagal mengoptimalkan gambar.' });
+        } finally {
+          setIsOptimizing(false);
+        }
+      } else {
+        // Untuk video/audio gunakan pembacaan standar (dan beri peringatan limit 3MB agar tidak memenuhi localstorage)
+        if (file.size > 3 * 1024 * 1024) {
+          setMessage({ type: 'error', text: 'Untuk file non-gambar, batas maksimal adalah 3MB.' });
+          if (fileInputRef.current) fileInputRef.current.value = '';
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setMediaUrl(reader.result as string);
+          setMessage(null);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -69,7 +91,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
       mediaUrl: finalMediaUrl, 
       tags: tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
       createdAt: Date.now(),
-      isFeatured: false // Inisialisasi status unggulan
+      isFeatured: false 
     };
 
     setTimeout(() => {
@@ -84,10 +106,10 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
         setMediaType('image');
         if (fileInputRef.current) fileInputRef.current.value = '';
         
-        setMessage({ type: 'success', text: 'Portofolio berhasil disimpan!' });
+        setMessage({ type: 'success', text: 'Portofolio berhasil disimpan & dioptimalkan!' });
         setTimeout(() => onSuccess(), 1500); 
       } else {
-        setMessage({ type: 'error', text: 'Gagal menyimpan. Memori penuh.' });
+        setMessage({ type: 'error', text: 'Gagal menyimpan. Memori lokal penuh.' });
       }
       setIsSubmitting(false);
     }, 800);
@@ -96,6 +118,15 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
   const isDataUrlImage = (url: string) => url.startsWith('data:image/');
 
   const renderMediaPreview = () => {
+    if (isOptimizing) {
+      return (
+        <div className="mt-4 w-full h-48 bg-slate-100 dark:bg-slate-800 rounded-lg flex flex-col items-center justify-center gap-3 animate-pulse">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs font-bold text-primary uppercase tracking-widest">Mengoptimalkan Gambar...</p>
+        </div>
+      );
+    }
+    
     if (!mediaUrl) return null;
 
     return (
@@ -117,7 +148,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
               <div className="w-2 h-2 rounded-full bg-red-400"></div>
               <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
               <div className="w-2 h-2 rounded-full bg-green-400"></div>
-              <div className="ml-2 bg-white text-[10px] text-slate-500 px-2 py-0.5 rounded flex-1 truncate">{mediaUrl.length > 100 ? 'Local Screenshot' : mediaUrl}</div>
+              <div className="ml-2 bg-white text-[10px] text-slate-500 px-2 py-0.5 rounded flex-1 truncate">{mediaUrl.length > 100 ? 'Optimized Screenshot' : mediaUrl}</div>
             </div>
             {isDataUrlImage(mediaUrl) ? (
               <div className="flex-1 overflow-hidden">
@@ -209,11 +240,12 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
             />
 
             <label className="inline-block cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-4 py-2 rounded-lg text-sm font-medium">
-              Pilih File Local
+              {isOptimizing ? 'Memproses...' : 'Pilih File Local'}
               <input 
                 type="file" 
                 ref={fileInputRef} 
                 className="hidden" 
+                disabled={isOptimizing}
                 onChange={handleFileUpload} 
                 accept={mediaType === 'image' || mediaType === 'certificate' || mediaType === 'web' ? "image/*" : mediaType === 'video' ? "video/*" : "audio/*"} 
               />
@@ -256,7 +288,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
             />
           </div>
 
-          <Button type="submit" isLoading={isSubmitting} className="w-full py-4 text-lg">
+          <Button type="submit" isLoading={isSubmitting || isOptimizing} className="w-full py-4 text-lg">
             Simpan Portofolio
           </Button>
         </form>

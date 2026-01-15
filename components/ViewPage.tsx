@@ -8,6 +8,8 @@ import ProfileSection from './ProfileSection';
 interface ViewPageProps {
   isCreator: boolean;
   onModalToggle?: (isOpen: boolean) => void;
+  isChatOpen?: boolean;
+  onChatToggle?: () => void;
 }
 
 type ViewTab = 'gallery' | 'about';
@@ -28,14 +30,24 @@ const MediaItem: React.FC<{ item: PortfolioItem; isMinimal?: boolean; useZoomLoo
   const url = item.mediaUrl || '';
   const handleLoad = () => setIsLoading(false);
 
-  // Helper to detect if URL is an image or base64 data image
   const isUrlImage = (u: string) => u.startsWith('data:image/') || /\.(jpg|jpeg|png|webp|avif|gif|svg)$/i.test(u);
 
   if (type === 'certificate' || type === 'image' || (type === 'web' && isUrlImage(url))) {
     return (
-      <div className={`w-full h-full relative bg-slate-100 dark:bg-slate-800 overflow-hidden`}>
-        <img src={url} alt={item.title} onLoad={handleLoad} className={`w-full h-full transition-transform duration-[3000ms] ease-out ${useZoomLoop ? 'animate-slow-zoom' : 'group-hover:scale-110'} ${isLoading ? 'opacity-0' : 'opacity-100'} object-cover`} loading="lazy" />
-        {isLoading && <div className="absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-slate-800 animate-pulse"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
+      <div className={`w-full h-full relative bg-slate-200 dark:bg-slate-800 overflow-hidden`}>
+        {isLoading && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center shimmer-gradient animate-shimmer">
+             <div className="flex flex-col items-center opacity-40 animate-pulse">
+                <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-slate-400 dark:bg-slate-600 mb-2 flex items-center justify-center shadow-inner">
+                   <svg className="w-6 h-6 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                   </svg>
+                </div>
+                <span className="text-[10px] font-black tracking-widest text-slate-500 dark:text-slate-400 uppercase">4RISE Loading</span>
+             </div>
+          </div>
+        )}
+        <img src={url} alt={item.title} onLoad={handleLoad} className={`w-full h-full transition-all duration-700 ease-out ${useZoomLoop ? 'animate-slow-zoom' : 'group-hover:scale-110'} ${isLoading ? 'opacity-0 scale-105 blur-sm' : 'opacity-100 scale-100 blur-0'} object-cover`} loading="lazy" />
       </div>
     );
   }
@@ -75,7 +87,7 @@ const FeaturedBanner: React.FC<{ items: PortfolioItem[] }> = ({ items }) => {
   );
 };
 
-const ViewPage: React.FC<ViewPageProps> = ({ isCreator, onModalToggle }) => {
+const ViewPage: React.FC<ViewPageProps> = ({ isCreator, onModalToggle, isChatOpen, onChatToggle }) => {
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -121,12 +133,32 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, onModalToggle }) => {
 
   return (
     <div className="relative min-h-[80vh] animate-fade-in pb-24 md:pb-0">
-      <nav className="hidden md:flex flex-col gap-5 fixed left-6 top-1/2 -translate-y-1/2 z-50">
-        <button onClick={() => setActiveTab('gallery')} className={`p-4 rounded-[1.2rem] transition-all shadow-xl border-2 ${activeTab === 'gallery' ? 'bg-primary text-white scale-110 shadow-primary/30 border-white' : 'bg-white dark:bg-slate-800 text-slate-400 border-transparent hover:text-primary'}`}><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg></button>
-        <button onClick={() => setActiveTab('about')} className={`p-4 rounded-[1.2rem] transition-all shadow-xl border-2 ${activeTab === 'about' ? 'bg-primary text-white scale-110 shadow-primary/30 border-white' : 'bg-white dark:bg-slate-800 text-slate-400 border-transparent hover:text-primary'}`}><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></button>
+      {/* DESKTOP SIDEBAR NAV - UPGRADED TO CRYSTAL PILL STYLE */}
+      <nav className="hidden md:flex flex-col items-center p-1.5 fixed left-8 top-1/2 -translate-y-1/2 z-50 bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl rounded-[1.8rem] border border-white/40 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none transition-all">
+        <button 
+          onClick={() => setActiveTab('gallery')} 
+          className={`p-3 rounded-2xl transition-all active:scale-90 ${activeTab === 'gallery' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/5'}`}
+          title="Galeri"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
+        </button>
+        
+        <div className="w-6 h-px bg-slate-200 dark:bg-slate-700 my-1.5"></div>
+        
+        <button 
+          onClick={() => setActiveTab('about')} 
+          className={`p-3 rounded-2xl transition-all active:scale-90 ${activeTab === 'about' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/5'}`}
+          title="Profil"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </button>
       </nav>
 
-      <div className="w-full transition-all duration-300 md:pl-20">
+      <div className="w-full transition-all duration-300 md:pl-24">
         {activeTab === 'about' ? <div className="animate-fade-in max-w-5xl mx-auto">{profile ? <ProfileSection profile={profile} /> : <div>Profil belum diatur.</div>}</div> : (
           <div className="animate-fade-in">
             <div className="flex flex-col gap-4 mb-10 bg-white/10 dark:bg-slate-900/40 backdrop-blur-3xl p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-white/20 dark:border-slate-800/50 shadow-lg">
@@ -177,80 +209,29 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, onModalToggle }) => {
         )}
       </div>
 
-      {/* ULTRA-MINIMALIST & IMMERSIVE DETAIL MODAL (FULL IMAGE FILL) */}
+      {/* ULTRA-MINIMALIST & IMMERSIVE DETAIL MODAL */}
       {selectedItem && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 bg-slate-950/98 backdrop-blur-3xl animate-fade-in" onClick={() => handleSelectItem(null)}>
-           <div 
-             className="w-full max-w-lg h-[85vh] bg-white dark:bg-slate-900 rounded-[3rem] overflow-hidden shadow-[0_40px_120px_rgba(0,0,0,1)] border-4 border-white dark:border-slate-800 relative animate-fade-in-up" 
-             onClick={(e) => e.stopPropagation()}
-           >
-              {/* IMMERSIVE CONTENT (SINGULAR CONTAINER) */}
+           <div className="w-full max-w-lg h-[85vh] bg-white dark:bg-slate-900 rounded-[3rem] overflow-hidden shadow-[0_40px_120px_rgba(0,0,0,1)] border-4 border-white dark:border-slate-800 relative animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
               <div className="absolute inset-0 w-full h-full overflow-hidden group">
-                {/* Image fills the whole card */}
                 <MediaItem item={selectedItem} isModal={true} />
-                
-                {/* Immersive Deep Gradient (Top and Bottom) */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/100 via-black/20 to-black/20 pointer-events-none"></div>
-                
-                {/* Close Button (Minimalist Circle) */}
-                <button 
-                  onClick={() => handleSelectItem(null)} 
-                  className="absolute top-8 right-8 z-50 p-2.5 rounded-full bg-white/10 text-white hover:bg-white/30 transition-all backdrop-blur-xl border border-white/10 shadow-2xl active:scale-90"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-
-                {/* Floating Type Badges (Top Left) */}
+                <button onClick={() => handleSelectItem(null)} className="absolute top-8 right-8 z-50 p-2.5 rounded-full bg-white/10 text-white hover:bg-white/30 transition-all backdrop-blur-xl border border-white/10 shadow-2xl active:scale-90"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
                 <div className="absolute top-8 left-8 flex gap-2 z-20">
                   <span className="px-3 py-1 bg-primary text-white text-[9px] font-black uppercase rounded-lg shadow-lg ring-1 ring-white/20 tracking-tighter">{selectedItem.mediaType?.toUpperCase()}</span>
                   {selectedItem.isFeatured && <span className="px-3 py-1 bg-red-500 text-white text-[9px] font-black uppercase rounded-lg shadow-lg ring-1 ring-white/20 animate-pulse tracking-tighter">UNGGULAN</span>}
                 </div>
-
-                {/* Overlaid Content (Everything sitting on the image) */}
                 <div className="absolute bottom-0 left-0 p-10 w-full z-10 flex flex-col justify-end bg-gradient-to-t from-black/90 via-black/30 to-transparent pt-32">
-                   
-                   <div className="flex flex-wrap gap-2 mb-4">
-                      {selectedItem.tags.map(tag => (
-                        <span key={tag} className="px-2.5 py-1 bg-white/10 backdrop-blur-md text-white/80 text-[8px] font-black rounded-md border border-white/10 uppercase tracking-widest">
-                          #{tag}
-                        </span>
-                      ))}
-                   </div>
-                   
-                   <h2 className="text-3xl md:text-5xl font-black text-white leading-tight mb-3 drop-shadow-2xl tracking-tighter">
-                     {selectedItem.title}
-                   </h2>
-                   
-                   <p className="text-white/60 text-xs md:text-sm leading-relaxed mb-8 font-medium line-clamp-3 md:line-clamp-none">
-                     {selectedItem.description}
-                   </p>
-                   
-                   {/* Minimalist Action Controls (Floating Pillars) */}
+                   <div className="flex flex-wrap gap-2 mb-4">{selectedItem.tags.map(tag => (<span key={tag} className="px-2.5 py-1 bg-white/10 backdrop-blur-md text-white/80 text-[8px] font-black rounded-md border border-white/10 uppercase tracking-widest">#{tag}</span>))}</div>
+                   <h2 className="text-3xl md:text-5xl font-black text-white leading-tight mb-3 drop-shadow-2xl tracking-tighter">{selectedItem.title}</h2>
+                   <p className="text-white/60 text-xs md:text-sm leading-relaxed mb-8 font-medium line-clamp-3 md:line-clamp-none">{selectedItem.description}</p>
                    <div className="flex gap-4">
                       {selectedItem.projectUrl ? (
-                        <a 
-                          href={selectedItem.projectUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="flex-1 flex items-center justify-center gap-3 py-5 bg-white text-slate-900 rounded-2xl font-black text-xs md:text-sm uppercase tracking-[0.2em] shadow-2xl hover:bg-primary hover:text-white active:scale-95 transition-all"
-                        >
-                          BUKA KARYA
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                        </a>
+                        <a href={selectedItem.projectUrl} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-3 py-5 bg-white text-slate-900 rounded-2xl font-black text-xs md:text-sm uppercase tracking-[0.2em] shadow-2xl hover:bg-primary hover:text-white active:scale-95 transition-all">BUKA KARYA<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg></a>
                       ) : (
-                        <div className="flex-1 text-center py-5 bg-white/5 text-white/30 border border-white/10 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em]">
-                          TAUTAN TIDAK TERSEDIA
-                        </div>
+                        <div className="flex-1 text-center py-5 bg-white/5 text-white/30 border border-white/10 rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-[0.2em]">TAUTAN TIDAK TERSEDIA</div>
                       )}
-                      
-                      {isCreator && (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleDelete(selectedItem.id); handleSelectItem(null); }} 
-                          className="p-5 bg-red-500/20 text-red-500 rounded-2xl border border-red-500/20 hover:bg-red-500 hover:text-white transition-all shadow-lg active:scale-95 backdrop-blur-md"
-                        >
-                          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-                        </button>
-                      )}
+                      {isCreator && (<button onClick={(e) => { e.stopPropagation(); handleDelete(selectedItem.id); handleSelectItem(null); }} className="p-5 bg-red-500/20 text-red-500 rounded-2xl border border-red-500/20 hover:bg-red-500 hover:text-white transition-all shadow-lg active:scale-95 backdrop-blur-md"><svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg></button>)}
                    </div>
                 </div>
               </div>
@@ -258,12 +239,44 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, onModalToggle }) => {
         </div>
       )}
 
-      {!isCreator && (
-        <nav className={`md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] bg-white/30 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800 rounded-2xl shadow-2xl z-50 p-3 flex justify-around items-center transition-opacity duration-300 ${selectedItem ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-          <button onClick={() => setActiveTab('gallery')} className={`p-4 rounded-xl transition-all ${activeTab === 'gallery' ? 'text-primary bg-primary/20 ring-1 ring-primary/20' : 'text-slate-400'}`}><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg></button>
-          <button onClick={() => setActiveTab('about')} className={`p-4 rounded-xl transition-all ${activeTab === 'about' ? 'text-primary bg-primary/20 ring-1 ring-primary/20' : 'text-slate-400'}`}><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></button>
-        </nav>
-      )}
+      {/* FLOATING BOTTOM NAV - UPGRADED TO TOPBAR UTILITY STYLE */}
+      <nav className={`md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-[60] transition-all duration-500 ease-in-out ${selectedItem ? 'opacity-0 translate-y-20 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
+        <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-[2.5rem] border border-white/40 dark:border-slate-800/60 shadow-[0_25px_60px_rgba(0,0,0,0.3)] overflow-hidden p-2 flex justify-center items-center gap-3">
+          
+          {/* Gallery Button */}
+          <button 
+            onClick={() => setActiveTab('gallery')} 
+            className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-[1.8rem] transition-all duration-300 active:scale-95 ${activeTab === 'gallery' && !isChatOpen ? 'bg-primary text-white shadow-xl shadow-primary/40' : 'bg-slate-500/5 dark:bg-slate-400/5 text-slate-500 dark:text-slate-400'}`}
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            <span className="text-[8px] font-black uppercase tracking-widest">Galeri</span>
+          </button>
+          
+          {/* About Button */}
+          <button 
+            onClick={() => setActiveTab('about')} 
+            className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-[1.8rem] transition-all duration-300 active:scale-95 ${activeTab === 'about' && !isChatOpen ? 'bg-primary text-white shadow-xl shadow-primary/40' : 'bg-slate-500/5 dark:bg-slate-400/5 text-slate-500 dark:text-slate-400'}`}
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span className="text-[8px] font-black uppercase tracking-widest">Tentang</span>
+          </button>
+
+          {/* Chat Button */}
+          <button 
+            onClick={onChatToggle}
+            className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-[1.8rem] transition-all duration-300 active:scale-95 ${isChatOpen ? 'bg-primary text-white shadow-xl shadow-primary/40' : 'bg-slate-500/5 dark:bg-slate-400/5 text-slate-500 dark:text-slate-400'}`}
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+            <span className="text-[8px] font-black uppercase tracking-widest">Chat</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 };
