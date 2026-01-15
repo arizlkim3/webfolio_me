@@ -60,7 +60,7 @@ export interface UserProfile {
   experience: Experience[];
 }
 
-export type TabView = 'create' | 'view' | 'profile';
+export type TabView = 'create' | 'gallery' | 'about' | 'profile';
 export type UserRole = 'creator' | 'guest';
 export type Theme = 'light' | 'dark';
 

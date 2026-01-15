@@ -26,10 +26,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({ isOpen, onToggle, onClose }
   };
 
   return (
-    <div className="fixed bottom-24 md:bottom-10 right-6 z-[100] flex flex-col items-end gap-4 pointer-events-none">
+    <div className="fixed bottom-24 md:bottom-10 right-6 z-[200] flex flex-col items-end gap-4 pointer-events-none">
       {/* Chat Window */}
       <div className={`w-72 md:w-80 max-w-[calc(100vw-3rem)] transition-all duration-500 transform origin-bottom-right pointer-events-auto ${isOpen ? 'scale-100 opacity-100 translate-y-0' : 'scale-75 opacity-0 translate-y-10 pointer-events-none'}`}>
-        <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl rounded-[2rem] border border-white/40 dark:border-slate-800/60 shadow-[0_30px_100px_rgba(0,0,0,0.2)] dark:shadow-[0_40px_120px_rgba(0,0,0,0.6)] overflow-hidden">
+        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-[2rem] border border-white/40 dark:border-slate-800/60 shadow-[0_30px_100px_rgba(0,0,0,0.4)] overflow-hidden">
           
           {/* Header */}
           <div className="bg-gradient-to-r from-primary to-secondary p-5 text-white relative">
@@ -76,10 +76,10 @@ const FloatingChat: React.FC<FloatingChatProps> = ({ isOpen, onToggle, onClose }
         </div>
       </div>
 
-      {/* Trigger Button - Desktop only */}
+      {/* Trigger Button - Hidden on Mobile because it's in the Bottom Nav */}
       <button 
         onClick={onToggle} 
-        className={`hidden md:flex pointer-events-auto relative group w-16 h-16 rounded-full items-center justify-center transition-all duration-500 shadow-2xl ${isOpen ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 rotate-[135deg] scale-90' : 'bg-primary text-white hover:scale-110 active:scale-95'}`}
+        className={`hidden md:flex pointer-events-auto relative group w-16 h-16 rounded-full items-center justify-center transition-all duration-500 shadow-2xl opacity-0 animate-scale-up animation-delay-800 ${isOpen ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 rotate-[135deg] scale-90' : 'bg-primary text-white hover:scale-110 active:scale-95'}`}
       >
         <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping pointer-events-none"></div>
         {isOpen ? (
