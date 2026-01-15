@@ -47,18 +47,20 @@ const MediaItem: React.FC<{ item: PortfolioItem; isMinimal?: boolean; useZoomLoo
              </div>
           </div>
         )}
-        <img src={url} alt={item.title} onLoad={handleLoad} className={`w-full h-full transition-all duration-700 ease-out ${useZoomLoop ? 'animate-slow-zoom' : 'group-hover:scale-110'} ${isLoading ? 'opacity-0 scale-105 blur-sm' : 'opacity-100 scale-100 blur-0'} object-cover`} loading="lazy" />
+        <img src={url} alt={item.title} onLoad={handleLoad} className={`w-full h-full transition-all duration-1000 ease-out ${useZoomLoop ? 'animate-slow-zoom' : 'group-hover:scale-110'} ${isLoading ? 'opacity-0 scale-105 blur-sm' : 'opacity-100 scale-100 blur-0'} object-cover`} loading="lazy" />
       </div>
     );
   }
 
   if (type === 'web' && isModal) return <iframe src={url} className="w-full h-full border-0 bg-white" title={item.title} />;
-  if (type === 'video' && isModal) return <video src={url} controls className="w-full h-full object-cover bg-black" />;
+  if (type === 'video' && isModal) return <video src={url} controls autoPlay className="w-full h-full object-contain bg-black" />;
   if (type === 'audio' && isModal) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center p-6 bg-slate-900">
-         <div className="w-12 h-12 mb-3 rounded-full bg-primary/20 flex items-center justify-center animate-pulse"><svg className="w-6 h-6 text-primary" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 3V15.035A3.987 3.987 0 004 15a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0010 19V5.14l8-1.6V12.035A3.987 3.987 0 0016 12a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0022 16V4a1 1 0 00-.4-.8z"/></svg></div>
-         <audio src={url} controls className="w-full max-w-[200px]" />
+      <div className="w-full h-full flex flex-col items-center justify-center p-12 bg-slate-900">
+         <div className="w-20 h-20 mb-6 rounded-3xl bg-primary/20 flex items-center justify-center animate-pulse border border-primary/30 shadow-2xl">
+           <svg className="w-10 h-10 text-primary" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 3V15.035A3.987 3.987 0 004 15a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0010 19V5.14l8-1.6V12.035A3.987 3.987 0 0016 12a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0022 16V4a1 1 0 00-.4-.8z"/></svg>
+         </div>
+         <audio src={url} controls autoPlay className="w-full max-w-md shadow-2xl" />
       </div>
     );
   }
@@ -79,8 +81,8 @@ const FeaturedBanner: React.FC<{ items: PortfolioItem[] }> = ({ items }) => {
   if (items.length === 0) return null;
   const activeItem = items[currentIndex];
   return (
-    <div className="relative w-full h-[300px] md:h-[400px] rounded-[2rem] overflow-hidden mb-12 shadow-2xl animate-scale-up group border-4 border-white dark:border-slate-800">
-       <div className="absolute inset-0 bg-slate-200 dark:bg-slate-800"><div key={activeItem.id} className="w-full h-full"><MediaItem item={activeItem} useZoomLoop={true} /></div><div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent"></div></div>
+    <div className="relative w-full h-[300px] md:h-[400px] rounded-[2rem] overflow-hidden mb-12 shadow-2xl animate-scale-up group">
+       <div className="absolute inset-0 bg-slate-200 dark:bg-slate-800"><div key={activeItem.id} className="w-full h-full"><MediaItem item={activeItem} useZoomLoop={true} /></div><div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div></div>
        <div className="absolute bottom-0 left-0 p-6 md:p-10 w-full max-w-2xl z-10"><div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-white text-[9px] font-black uppercase tracking-widest mb-3"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>Karya Unggulan</div><h2 className="text-2xl md:text-4xl font-black text-white leading-none mb-3 drop-shadow-md">{activeItem.title}</h2><p className="text-white/70 text-xs md:text-sm line-clamp-2 mb-5 max-w-xl">{activeItem.description}</p><div className="flex items-center gap-4"><a href={activeItem.projectUrl || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-white font-black text-[10px] hover:bg-white hover:text-primary transition-all shadow-xl active:scale-95">BUKA KARYA<svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg></a></div></div>
        {items.length > 1 && <div className="absolute bottom-6 right-8 flex gap-1.5 z-20">{items.map((_, idx) => <button key={idx} onClick={() => setCurrentIndex(idx)} className={`transition-all duration-500 rounded-full h-1 ${idx === currentIndex ? 'w-6 bg-primary shadow-sm' : 'w-1 bg-white/30'}`} />)}</div>}
     </div>
@@ -148,7 +150,7 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
           </div>
         ) : (
           <div>
-            {/* Header Control Panel - Delay disesuaikan agar tidak tabrakan dengan Header Utama */}
+            {/* Header Control Panel */}
             <div className="flex flex-col gap-4 mb-10 bg-white/10 dark:bg-slate-900/40 backdrop-blur-3xl p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-white/20 dark:border-slate-800/50 shadow-lg">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3 opacity-0 animate-fly-in-left animation-delay-500">
@@ -185,7 +187,7 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                   <button 
                     key={section.type} 
                     onClick={() => setSelectedCategory(section.type)} 
-                    className={`group relative aspect-square rounded-[1.5rem] overflow-hidden shadow-lg border-2 border-white dark:border-slate-800 transition-all hover:scale-[1.02] active:scale-95 opacity-0 animate-scale-up animation-delay-${Math.min(1000, 700 + (idx * 100))}`}
+                    className={`group relative aspect-square rounded-[1.5rem] overflow-hidden shadow-lg border border-white/20 dark:border-slate-800 transition-all hover:scale-[1.02] active:scale-95 opacity-0 animate-scale-up animation-delay-${Math.min(1000, 700 + (idx * 100))}`}
                   >
                     <div className={`absolute inset-0 bg-gradient-to-br ${section.color} opacity-80 group-hover:opacity-100 transition-opacity`}></div>
                     <div className="relative h-full p-5 flex flex-col justify-between text-white text-left">
@@ -223,20 +225,72 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                   return (
                     <div key={section.type}>
                       {!selectedCategory && (
-                        <div className="flex items-center gap-3 mb-6 border-b-2 border-white/20 dark:border-slate-800 pb-4 opacity-0 animate-fly-in-left animation-delay-700">
+                        <div className="flex items-center gap-3 mb-6 border-b border-white/10 dark:border-slate-800 pb-4 opacity-0 animate-fly-in-left animation-delay-700">
                           <div className="p-2 bg-primary/10 rounded-xl text-primary backdrop-blur-md">{section.icon}</div>
                           <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">{section.label}</h3>
                         </div>
                       )}
                       {(!selectedTag && !searchQuery) && sectionFeaturedItems.length > 0 && <FeaturedBanner items={sectionFeaturedItems} />}
-                      <div className={displayMode === 'grid' ? "grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6" : "flex flex-wrap gap-3"}>
+                      <div className={displayMode === 'grid' ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5" : "flex flex-wrap gap-3"}>
                         {sectionItems.map((item, idx) => (
                           displayMode === 'grid' ? (
-                            <div key={item.id} onClick={() => handleSelectItem(item)} className={`group relative aspect-[4/5] rounded-[2rem] overflow-hidden shadow-xl transition-all duration-300 border-4 border-white dark:border-slate-800 cursor-pointer hover:shadow-primary/20 hover:-translate-y-1 opacity-0 animate-scale-up animation-delay-${Math.min(1200, 800 + (idx * 100))}`}>
-                               <div className="absolute inset-0 bg-slate-200 dark:bg-slate-800 overflow-hidden"><MediaItem item={item} /></div>
-                               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/10 to-transparent transition-opacity group-hover:opacity-80"></div>
-                               <div className="absolute top-4 left-4 z-20 flex flex-wrap gap-1.5 pr-8"><span className="px-2 py-0.5 bg-primary text-white text-[7px] font-black uppercase tracking-tighter rounded shadow-sm">{item.mediaType?.toUpperCase()}</span>{item.isFeatured && <span className="px-2 py-0.5 bg-red-500 text-white text-[7px] font-black uppercase tracking-tighter rounded shadow-sm animate-pulse">UNGGULAN</span>}</div>
-                               <div className="absolute bottom-0 left-0 p-5 md:p-6 w-full text-white z-10"><div className="flex flex-wrap gap-1 mb-2">{item.tags.slice(0, 2).map(tag => <span key={tag} className="px-1.5 py-0.5 bg-white/10 backdrop-blur-md rounded-md text-[7px] font-black text-white/70 uppercase tracking-widest border border-white/10">#{tag}</span>)}</div><h3 className="text-base md:text-xl font-black leading-tight mb-2 group-hover:text-primary transition-colors truncate drop-shadow-md">{item.title}</h3><p className="text-white/60 text-[9px] md:text-xs line-clamp-2 mb-4 leading-relaxed font-medium">{item.description}</p><div className="flex items-center"><span className="text-[8px] font-black text-white bg-primary px-4 py-2 rounded-full shadow-lg group-hover:bg-white group-hover:text-primary transition-all uppercase tracking-widest">DETAIL →</span></div></div>
+                            <div key={item.id} onClick={() => handleSelectItem(item)} className={`group relative aspect-[4/5] sm:aspect-[3/4] rounded-[1.8rem] md:rounded-[2.2rem] overflow-hidden shadow-2xl transition-all duration-500 cursor-pointer hover:shadow-primary/30 hover:-translate-y-2 opacity-0 animate-scale-up animation-delay-${Math.min(1200, 800 + (idx * 80))}`}>
+                               {/* Full Media Layer */}
+                               <div className="absolute inset-0 bg-slate-200 dark:bg-slate-900 overflow-hidden">
+                                 <MediaItem item={item} />
+                               </div>
+                               
+                               {/* Protection Gradient */}
+                               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500"></div>
+                               
+                               {/* Top Badge & Love Button */}
+                               <div className="absolute top-5 left-5 right-5 z-20 flex justify-between items-start">
+                                 <div className="flex flex-wrap gap-1.5 pr-10">
+                                   <span className="px-2.5 py-1 bg-white/20 backdrop-blur-md border border-white/20 text-white text-[8px] font-black uppercase tracking-tighter rounded-lg shadow-sm">
+                                     {item.mediaType?.toUpperCase()}
+                                   </span>
+                                   {item.isFeatured && (
+                                     <span className="px-2.5 py-1 bg-rose-500 text-white text-[8px] font-black uppercase tracking-tighter rounded-lg shadow-sm animate-pulse">
+                                       FEATURED
+                                     </span>
+                                   )}
+                                 </div>
+
+                                 {/* Tombol Love / Unggulkan */}
+                                 {isCreator && (
+                                   <button 
+                                      onClick={(e) => { e.stopPropagation(); handleToggleFeatured(item.id); }}
+                                      className={`p-2.5 rounded-full backdrop-blur-xl border transition-all duration-500 active:scale-75 ${item.isFeatured ? 'bg-rose-500/20 border-rose-500/50 text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.4)]' : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/20 hover:text-white'}`}
+                                      title={item.isFeatured ? "Hapus dari Unggulan" : "Jadikan Unggulan"}
+                                   >
+                                      <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 transition-transform duration-500 ${item.isFeatured ? 'scale-110' : 'scale-100'}`} fill={item.isFeatured ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                      </svg>
+                                   </button>
+                                 )}
+                               </div>
+                               
+                               {/* Bottom Text Content */}
+                               <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full text-white z-10 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                                 <div className="flex flex-wrap gap-1.5 mb-3 opacity-80">
+                                   {item.tags.slice(0, 2).map(tag => (
+                                     <span key={tag} className="px-2 py-0.5 bg-white/10 backdrop-blur-md rounded-md text-[8px] font-black text-white uppercase tracking-widest border border-white/5">
+                                       #{tag}
+                                     </span>
+                                   ))}
+                                 </div>
+                                 <h3 className="text-xl md:text-2xl font-black leading-none mb-3 group-hover:text-primary transition-colors drop-shadow-2xl">
+                                   {item.title}
+                                 </h3>
+                                 <p className="text-white/70 text-[10px] md:text-xs line-clamp-2 mb-6 leading-relaxed font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                                   {item.description}
+                                 </p>
+                                 <div className="flex items-center">
+                                   <span className="text-[9px] font-black text-white bg-primary/90 hover:bg-white hover:text-primary px-5 py-2.5 rounded-xl shadow-xl transition-all uppercase tracking-[0.2em]">
+                                     LIHAT DETAIL →
+                                   </span>
+                                 </div>
+                               </div>
                             </div>
                           ) : (
                             <div key={item.id} onClick={() => handleSelectItem(item)} className={`group relative flex items-center gap-3 bg-white/30 dark:bg-slate-800/50 backdrop-blur-md pl-1.5 pr-4 py-1.5 border border-white/20 dark:border-slate-700 rounded-full hover:border-primary transition-all cursor-pointer active:scale-95 shadow-sm opacity-0 animate-fly-in-right animation-delay-${Math.min(1200, 800 + (idx * 50))}`}><div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 border border-white/20 dark:border-slate-700 shadow-inner"><MediaItem item={item} isMinimal={true} /></div><div className="flex flex-col min-w-0"><span className="text-[10px] font-black text-slate-900 dark:text-white truncate max-w-[120px] uppercase tracking-tight leading-none">{item.title}</span><span className="text-[7px] font-bold text-primary">Detail Karya →</span></div></div>
@@ -251,6 +305,106 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
           </div>
         )}
       </div>
+
+      {/* --- DETAIL PREVIEW MODAL (SINEMATIK) --- */}
+      {selectedItem && (
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center p-0 md:p-8 animate-fade-in"
+          onClick={() => handleSelectItem(null)}
+        >
+           {/* Backdrop Gelap */}
+           <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-xl"></div>
+           
+           <div 
+             className="relative w-full max-w-6xl h-full md:h-[85vh] bg-slate-900 md:rounded-[2.5rem] overflow-hidden shadow-[0_0_150px_rgba(0,0,0,0.8)] border-0 md:border border-white/10 animate-scale-up"
+             onClick={(e) => e.stopPropagation()}
+           >
+              {/* Media Background (Full Bleed) */}
+              <div className="absolute inset-0 z-0">
+                 <MediaItem item={selectedItem} isModal={true} useZoomLoop={true} />
+              </div>
+
+              {/* Overlay Gradien Sinematik */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-slate-950/20 z-10"></div>
+
+              {/* Controls Top */}
+              <div className="absolute top-6 left-6 right-6 z-30 flex justify-between items-center">
+                 <div className="flex gap-2">
+                    <span className="px-4 py-1.5 bg-white/10 backdrop-blur-xl border border-white/20 text-white text-[10px] font-black uppercase tracking-widest rounded-full">
+                       {selectedItem.mediaType}
+                    </span>
+                    {selectedItem.isFeatured && (
+                       <span className="px-4 py-1.5 bg-rose-500/20 backdrop-blur-xl border border-rose-500/50 text-rose-500 text-[10px] font-black uppercase tracking-widest rounded-full shadow-[0_0_15px_rgba(244,63,94,0.3)]">
+                          UNGGULAN
+                       </span>
+                    )}
+                 </div>
+                 <button 
+                   onClick={() => handleSelectItem(null)} 
+                   className="p-3 bg-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white/20 rounded-full transition-all group active:scale-90"
+                 >
+                    <svg className="w-6 h-6 transition-transform group-hover:rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                 </button>
+              </div>
+
+              {/* Info Content (Overlayed at Bottom) */}
+              <div className="absolute bottom-0 left-0 w-full p-8 md:p-16 z-20 flex flex-col md:flex-row md:items-end md:justify-between gap-8 animate-fade-in-up animation-delay-300">
+                 <div className="max-w-3xl">
+                    <div className="flex flex-wrap gap-2 mb-4">
+                       {selectedItem.tags.map(tag => (
+                         <span key={tag} className="px-3 py-1 bg-white/5 backdrop-blur-md rounded-lg text-[9px] font-black text-white/60 uppercase tracking-widest border border-white/10">#{tag}</span>
+                       ))}
+                    </div>
+                    
+                    <h2 className="text-4xl md:text-6xl font-black text-white mb-4 leading-none tracking-tighter drop-shadow-2xl">
+                       {selectedItem.title}
+                    </h2>
+                    
+                    <p className="text-white/70 text-sm md:text-base leading-relaxed max-w-2xl mb-8 line-clamp-4 md:line-clamp-none whitespace-pre-line font-medium">
+                       {selectedItem.description}
+                    </p>
+                    
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                       {selectedItem.projectUrl && (
+                          <a 
+                            href={selectedItem.projectUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-4 bg-primary text-white font-black text-xs uppercase tracking-[0.25em] rounded-2xl shadow-2xl shadow-primary/30 hover:bg-white hover:text-primary transition-all active:scale-95"
+                          >
+                             BUKA KARYA
+                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                          </a>
+                       )}
+                       
+                       {isCreator && (
+                          <div className="flex gap-2 w-full sm:w-auto">
+                            <button 
+                               onClick={() => { handleToggleFeatured(selectedItem.id); handleSelectItem(getPortfolioData().find(i => i.id === selectedItem.id) || null); }}
+                               className={`flex-1 sm:flex-none p-4 rounded-2xl border transition-all ${selectedItem.isFeatured ? 'bg-rose-500/20 border-rose-500/50 text-rose-500' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}`}
+                               title="Tandai Unggulan"
+                            >
+                               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill={selectedItem.isFeatured ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                               </svg>
+                            </button>
+                            <button 
+                               onClick={() => { handleDelete(selectedItem.id); handleSelectItem(null); }}
+                               className="flex-1 sm:flex-none p-4 bg-red-500/20 border border-red-500/50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all"
+                               title="Hapus Karya"
+                            >
+                               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                          </div>
+                       )}
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };
