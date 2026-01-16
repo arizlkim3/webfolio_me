@@ -20,6 +20,7 @@ type GridColumnCount = 1 | 2 | 3;
 const SECTIONS: { type: MediaType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
   { type: 'certificate', label: 'Sertifikat', description: 'Pencapaian profesional.', color: 'from-indigo-500 to-blue-600', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg> },
   { type: 'web', label: 'Website', description: 'Aplikasi & situs.', color: 'from-emerald-500 to-teal-600', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg> },
+  { type: 'movie', label: 'Movie', description: 'Karya sinematik.', color: 'from-slate-900 to-indigo-900', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V20M17 4V20M3 8H7M17 8H21M3 12H21M3 16H7M17 16H21M4 20H20C21.1046 20 22 19.1046 22 18V6C22 4.89543 21.1046 4 20 4H4C2.89543 4 2 4.89543 2 6V18C2 19.1046 2.89543 20 4 20Z" /></svg> },
   { type: 'video', label: 'Video', description: 'Visual bergerak.', color: 'from-rose-500 to-pink-600', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
   { type: 'audio', label: 'Audio', description: 'Produksi suara.', color: 'from-amber-500 to-orange-600', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg> },
   { type: 'image', label: 'Gambar', description: 'Fotografi & desain.', color: 'from-violet-500 to-purple-600', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> }
@@ -33,7 +34,7 @@ const MediaItem: React.FC<{ item: PortfolioItem; isMinimal?: boolean; useZoomLoo
 
   const isUrlImage = (u: string) => u.startsWith('data:image/') || /\.(jpg|jpeg|png|webp|avif|gif|svg)$/i.test(u);
 
-  if (type === 'certificate' || type === 'image' || (type === 'web' && isUrlImage(url))) {
+  if (type === 'certificate' || type === 'image' || type === 'movie' || (type === 'web' && isUrlImage(url))) {
     return (
       <div className={`w-full h-full relative bg-slate-200 dark:bg-slate-800 overflow-hidden`}>
         {isLoading && (
@@ -58,7 +59,7 @@ const MediaItem: React.FC<{ item: PortfolioItem; isMinimal?: boolean; useZoomLoo
     return (
       <div className="w-full h-full flex flex-col items-center justify-center p-12 bg-slate-900">
          <div className="w-20 h-20 mb-6 rounded-3xl bg-primary/20 flex items-center justify-center animate-pulse border border-primary/30 shadow-2xl">
-           <svg className="w-10 h-10 text-primary" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 3V15.035A3.987 3.987 0 004 15a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0010 19V5.14l8-1.6V12.035A3.987 3.987 0 0016 12a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0022 16V4a1 1 0 00-.4-.8z"/></svg>
+           <svg className="w-10 h-10 text-primary" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 3V15.035A3.987 3.987 0 004 15a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0010 19V5.14l8-1.6V12.035A3.987 3.987 0 0016 12a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0010 19V5.14l8-1.6V12.035A3.987 3.987 0 0016 12a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0022 16V4a1 1 0 00-.4-.8z"/></svg>
          </div>
          <audio src={url} controls autoPlay className="w-full max-w-md shadow-2xl" />
       </div>
@@ -95,7 +96,7 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<GalleryViewMode>('all');
   const [displayMode, setDisplayMode] = useState<ItemDisplayMode>('grid');
-  const [gridCols, setGridCols] = useState<GridColumnCount>(3);
+  const [gridCols, setGridCols] = useState<GridColumnCount>(2); 
   const [selectedCategory, setSelectedCategory] = useState<MediaType | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -129,12 +130,19 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
+      // Filter kategori movie hanya untuk Admin
+      if (!isCreator && (item.mediaType || 'image') === 'movie') return false;
+      
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || item.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesTag = selectedTag ? item.tags.includes(selectedTag) : true;
       const matchesCategory = selectedCategory ? (item.mediaType || 'image') === selectedCategory : true;
       return matchesSearch && matchesTag && matchesCategory;
     });
-  }, [items, searchQuery, selectedTag, selectedCategory]);
+  }, [items, searchQuery, selectedTag, selectedCategory, isCreator]);
+
+  const availableSections = useMemo(() => {
+    return SECTIONS.filter(section => isCreator || section.type !== 'movie');
+  }, [isCreator]);
 
   const handleDelete = (id: string) => { if (window.confirm('Hapus portofolio ini secara permanen?')) { deletePortfolioItem(id); setTimeout(() => setItems(getPortfolioData()), 200); } };
   const handleToggleFeatured = (id: string) => { if (toggleFeaturedItem(id)) setItems(getPortfolioData()); };
@@ -195,7 +203,7 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                     </button>
                     <button 
                       onClick={() => { setDisplayMode('grid'); setGridCols(3); }} 
-                      className={`p-1.5 md:p-2 rounded-md md:rounded-lg transition-all ${displayMode === 'grid' && gridCols === 3 ? 'bg-white dark:bg-slate-700 text-primary shadow-md' : 'text-slate-400'}`}
+                      className={`hidden md:flex p-1.5 md:p-2 rounded-md md:rounded-lg transition-all ${displayMode === 'grid' && gridCols === 3 ? 'bg-white dark:bg-slate-700 text-primary shadow-md' : 'text-slate-400'}`}
                       title="3 Kolom"
                     >
                       <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
@@ -223,7 +231,7 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
 
             {viewMode === 'categories' && !selectedCategory ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-4">
-                {SECTIONS.map((section, idx) => (
+                {availableSections.map((section, idx) => (
                   <button 
                     key={section.type} 
                     onClick={() => setSelectedCategory(section.type)} 
@@ -257,7 +265,7 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                     <h3 className="text-lg md:text-xl font-black tracking-tight">{SECTIONS.find(s => s.type === selectedCategory)?.label}</h3>
                   </div>
                 )}
-                {SECTIONS.map((section) => {
+                {availableSections.map((section) => {
                   if (selectedCategory && selectedCategory !== section.type) return null;
                   const sectionItems = filteredItems.filter(item => (item.mediaType || 'image') === section.type);
                   if (sectionItems.length === 0) return null;
@@ -275,15 +283,10 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                         {sectionItems.map((item, idx) => (
                           displayMode === 'grid' ? (
                             <div key={item.id} onClick={() => handleSelectItem(item)} className={`group relative aspect-[3/4] rounded-[1.2rem] md:rounded-[2rem] overflow-hidden shadow-2xl transition-all duration-500 cursor-pointer hover:-translate-y-2 opacity-0 animate-scale-up animation-delay-${Math.min(1000, 300 + (idx * 50))}`}>
-                               {/* Full Media Layer */}
                                <div className="absolute inset-0 bg-slate-200 dark:bg-slate-900 overflow-hidden">
                                  <MediaItem item={item} />
                                </div>
-                               
-                               {/* Protection Gradient */}
                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-500"></div>
-                               
-                               {/* Top Badge & Love Button */}
                                <div className={`absolute z-20 flex justify-between items-start w-full ${gridCols === 1 ? 'p-8' : 'p-4 md:p-6'}`}>
                                  <div className="flex flex-wrap gap-1">
                                    <span className={`px-2 py-0.5 md:px-2.5 md:py-0.8 bg-white/10 backdrop-blur-xl border border-white/20 text-white font-black uppercase tracking-tighter rounded-md md:rounded-lg shadow-sm ${gridCols === 1 ? 'text-[10px]' : 'text-[7px] md:text-[8px]'}`}>
@@ -295,8 +298,6 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                                      </span>
                                    )}
                                  </div>
-
-                                 {/* Tombol Love / Unggulkan */}
                                  {isCreator && (
                                    <button 
                                       onClick={(e) => { e.stopPropagation(); handleToggleFeatured(item.id); }}
@@ -308,8 +309,6 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                                    </button>
                                  )}
                                </div>
-                               
-                               {/* Bottom Text Content - Refined for 3 columns grid */}
                                <div className={`absolute bottom-0 left-0 w-full text-white z-10 ${gridCols === 1 ? 'p-8 md:p-14' : 'p-5 md:p-8'}`}>
                                  <div className={`flex flex-wrap gap-1.5 mb-2 opacity-80 ${gridCols !== 1 ? 'hidden md:flex' : 'flex'}`}>
                                    {item.tags.slice(0, 3).map(tag => (
@@ -343,14 +342,12 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
         )}
       </div>
 
-      {/* --- DETAIL PREVIEW MODAL --- */}
       {selectedItem && (
         <div 
           className="fixed inset-0 z-[200] flex items-center justify-center p-0 md:p-10 animate-fade-in"
           onClick={() => handleSelectItem(null)}
         >
            <div className="absolute inset-0 bg-slate-950/98 backdrop-blur-3xl"></div>
-           
            <div 
              className="relative w-full max-w-7xl h-full md:h-[90vh] bg-slate-900 md:rounded-[3rem] overflow-hidden shadow-[0_0_200px_rgba(0,0,0,0.9)] border-0 md:border border-white/10 animate-scale-up"
              onClick={(e) => e.stopPropagation()}
@@ -358,9 +355,7 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
               <div className="absolute inset-0 z-0">
                  <MediaItem item={selectedItem} isModal={true} useZoomLoop={true} />
               </div>
-
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-slate-950/10 z-10"></div>
-
               <div className="absolute top-6 left-6 right-6 md:top-8 md:left-8 md:right-8 z-30 flex justify-between items-center">
                  <div className="flex gap-2.5">
                     <span className="px-4 py-1.5 md:px-5 md:py-2 bg-white/10 backdrop-blur-2xl border border-white/20 text-white text-[9px] md:text-xs font-black uppercase tracking-widest rounded-full">
@@ -382,7 +377,6 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                     </svg>
                  </button>
               </div>
-
               <div className="absolute bottom-0 left-0 w-full p-5 pb-8 md:p-20 z-20 flex flex-col md:flex-row md:items-end md:justify-between gap-6 md:gap-10 animate-fade-in-up animation-delay-300">
                  <div className="max-w-4xl">
                     <div className="flex flex-wrap gap-2 md:gap-2.5 mb-3 md:mb-6">
@@ -390,15 +384,12 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                          <span key={tag} className="px-3 py-1 md:px-4 md:py-1.5 bg-white/5 backdrop-blur-xl rounded-lg md:rounded-xl text-[8px] md:text-xs font-black text-white/60 uppercase tracking-widest border border-white/10">#{tag}</span>
                        ))}
                     </div>
-                    
                     <h2 className="text-3xl md:text-7xl lg:text-8xl font-black text-white mb-2 md:mb-6 leading-none tracking-tighter drop-shadow-2xl">
                        {selectedItem.title}
                     </h2>
-                    
                     <p className="text-white/70 md:text-white/80 text-[11px] md:text-xl leading-relaxed max-w-3xl mb-6 md:mb-12 line-clamp-3 md:line-clamp-none whitespace-pre-line font-medium drop-shadow-lg">
                        {selectedItem.description}
                     </p>
-                    
                     <div className="flex flex-col sm:flex-row items-center gap-4 md:gap-5">
                        {selectedItem.projectUrl && (
                           <a 
@@ -407,11 +398,10 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                             rel="noopener noreferrer" 
                             className="w-full sm:w-auto flex items-center justify-center gap-3 md:gap-4 px-10 py-3.5 md:px-12 md:py-6 bg-primary text-white font-black text-xs md:text-base uppercase tracking-[0.3em] rounded-xl md:rounded-3xl shadow-[0_20px_50px_rgba(99,102,241,0.5)] hover:bg-white hover:text-primary transition-all active:scale-95"
                           >
-                             BUKA KARYA
+                             {selectedItem.mediaType === 'movie' ? 'TONTON FILM' : 'BUKA KARYA'}
                              <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                           </a>
                        )}
-                       
                        {isCreator && (
                           <div className="flex gap-2.5 w-full sm:w-auto">
                             <button 

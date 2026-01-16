@@ -4,10 +4,6 @@ import { PortfolioItem, MediaType } from '../types';
 import { savePortfolioItem, compressImage } from '../services/storage';
 import Button from './Button';
 
-interface CreatePageProps {
-  onSuccess: () => void;
-}
-
 const MEDIA_ICONS: Record<MediaType, { icon: React.ReactNode, label: string }> = {
   image: {
     label: 'Gambar',
@@ -16,6 +12,10 @@ const MEDIA_ICONS: Record<MediaType, { icon: React.ReactNode, label: string }> =
   video: {
     label: 'Video',
     icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+  },
+  movie: {
+    label: 'Movie',
+    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V20M17 4V20M3 8H7M17 8H21M3 12H21M3 16H7M17 16H21M4 20H20C21.1046 20 22 19.1046 22 18V6C22 4.89543 21.1046 4 20 4H4C2.89543 4 2 4.89543 2 6V18C2 19.1046 2.89543 20 4 20Z" /></svg>
   },
   audio: {
     label: 'Audio',
@@ -30,6 +30,10 @@ const MEDIA_ICONS: Record<MediaType, { icon: React.ReactNode, label: string }> =
     icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
   }
 };
+
+interface CreatePageProps {
+  onSuccess: () => void;
+}
 
 const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
   const [title, setTitle] = useState('');
@@ -46,7 +50,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const limit = 10 * 1024 * 1024; // 10MB limit untuk input (akan dikompres)
+      const limit = 10 * 1024 * 1024; // 10MB limit
       
       if (file.size > limit) {
         setMessage({ type: 'error', text: 'Ukuran file terlalu besar (Maks 10MB sebelum optimasi).' });
@@ -54,12 +58,11 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
         return;
       }
 
-      // Optimasi hanya untuk tipe visual
-      if (file.type.startsWith('image/') && (mediaType === 'image' || mediaType === 'certificate' || mediaType === 'web')) {
+      // Movie sekarang menggunakan gambar cover, jadi kita tangani sebagai image
+      if (file.type.startsWith('image/') && (mediaType === 'image' || mediaType === 'certificate' || mediaType === 'web' || mediaType === 'movie')) {
         setIsOptimizing(true);
         setMessage(null);
         try {
-          // Kompres ke maks 1200px dengan kualitas 0.7
           const optimizedBase64 = await compressImage(file, 1200, 1200, 0.7);
           setMediaUrl(optimizedBase64);
         } catch (err) {
@@ -68,9 +71,8 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
           setIsOptimizing(false);
         }
       } else {
-        // Untuk video/audio gunakan pembacaan standar (dan beri peringatan limit 3MB agar tidak memenuhi localstorage)
-        if (file.size > 3 * 1024 * 1024) {
-          setMessage({ type: 'error', text: 'Untuk file non-gambar, batas maksimal adalah 3MB.' });
+        if (file.size > 5 * 1024 * 1024) { 
+          setMessage({ type: 'error', text: 'Untuk file non-gambar, batas maksimal adalah 5MB.' });
           if (fileInputRef.current) fileInputRef.current.value = '';
           return;
         }
@@ -96,8 +98,14 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
       return;
     }
 
+    if (mediaType === 'movie' && !projectUrl) {
+      setMessage({ type: 'error', text: 'Link Film wajib diisi untuk kategori Movie.' });
+      setIsSubmitting(false);
+      return;
+    }
+
     let finalMediaUrl = mediaUrl;
-    if (!finalMediaUrl && (mediaType === 'image' || mediaType === 'certificate')) {
+    if (!finalMediaUrl && (mediaType === 'image' || mediaType === 'certificate' || mediaType === 'movie')) {
        finalMediaUrl = `https://picsum.photos/seed/${Date.now()}/800/600`;
     }
 
@@ -129,7 +137,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
         setMediaType('image');
         if (fileInputRef.current) fileInputRef.current.value = '';
         
-        setMessage({ type: 'success', text: 'Portofolio berhasil disimpan & dioptimalkan!' });
+        setMessage({ type: 'success', text: 'Portofolio berhasil disimpan!' });
         setTimeout(() => onSuccess(), 1500); 
       } else {
         setMessage({ type: 'error', text: 'Gagal menyimpan. Memori lokal penuh.' });
@@ -145,7 +153,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
       return (
         <div className="mt-4 w-full h-48 bg-slate-100 dark:bg-slate-800 rounded-lg flex flex-col items-center justify-center gap-3 animate-pulse">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-xs font-bold text-primary uppercase tracking-widest">Mengoptimalkan Gambar...</p>
+          <p className="text-xs font-bold text-primary uppercase tracking-widest">Memproses Media...</p>
         </div>
       );
     }
@@ -153,11 +161,11 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
     if (!mediaUrl) return null;
 
     return (
-      <div className="mt-4 relative group w-full bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 flex items-center justify-center">
-        {(mediaType === 'image' || mediaType === 'certificate') && (
+      <div className="mt-4 relative group w-full bg-slate-100 dark:bg-slate-900 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-lg">
+        {(mediaType === 'image' || mediaType === 'certificate' || mediaType === 'movie') && (
            <img src={mediaUrl} alt="Preview" className="w-full h-48 md:h-64 object-cover" />
         )}
-        {mediaType === 'video' && (
+        {(mediaType === 'video') && (
            <video src={mediaUrl} controls className="w-full h-48 md:h-64 object-cover bg-black" />
         )}
         {mediaType === 'audio' && (
@@ -171,7 +179,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
               <div className="w-2 h-2 rounded-full bg-red-400"></div>
               <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
               <div className="w-2 h-2 rounded-full bg-green-400"></div>
-              <div className="ml-2 bg-white text-[10px] text-slate-500 px-2 py-0.5 rounded flex-1 truncate">{mediaUrl.length > 100 ? 'Optimized Screenshot' : mediaUrl}</div>
+              <div className="ml-2 bg-white text-[10px] text-slate-500 px-2 py-0.5 rounded flex-1 truncate">{mediaUrl}</div>
             </div>
             {isDataUrlImage(mediaUrl) ? (
               <div className="flex-1 overflow-hidden">
@@ -189,7 +197,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
             setMediaUrl('');
             if (fileInputRef.current) fileInputRef.current.value = '';
           }}
-          className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full shadow-lg hover:bg-red-700 z-20"
+          className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full shadow-lg hover:bg-red-700 z-20 transition-all active:scale-90"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -207,7 +215,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
         </h2>
 
         {message && (
-          <div className={`mb-6 p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          <div className={`mb-6 p-4 rounded-lg text-sm font-bold ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
             {message.text}
           </div>
         )}
@@ -215,21 +223,21 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              {mediaType === 'certificate' ? 'Nama Sertifikat / Lisensi *' : 'Judul Proyek *'}
+              {mediaType === 'certificate' ? 'Nama Sertifikat / Lisensi *' : mediaType === 'movie' ? 'Judul Film / Movie *' : 'Judul Proyek *'}
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none"
-              placeholder={mediaType === 'certificate' ? "Contoh: Google Data Analytics Professional" : "Contoh: Website Toko Online"}
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              placeholder={mediaType === 'certificate' ? "Contoh: Google Data Analytics" : mediaType === 'movie' ? "Contoh: Sang Penjelajah (Short Film)" : "Contoh: Website Toko Online"}
             />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Tipe Media</label>
-            <div className="grid grid-cols-5 gap-1.5 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
-              {(['image', 'video', 'audio', 'web', 'certificate'] as MediaType[]).map((type) => (
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
+              {(['image', 'video', 'movie', 'audio', 'web', 'certificate'] as MediaType[]).map((type) => (
                 <button
                   key={type}
                   type="button"
@@ -247,7 +255,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
                 >
                   {MEDIA_ICONS[type].icon}
                   <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest mt-1 opacity-60">
-                    {MEDIA_ICONS[type].label.slice(0, 3)}
+                    {MEDIA_ICONS[type].label.slice(0, 4)}
                   </span>
                 </button>
               ))}
@@ -256,25 +264,25 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              {mediaType === 'certificate' ? 'Upload Gambar Sertifikat / URL' : mediaType === 'web' ? 'URL Website / Screenshot' : 'Media URL / File'}
+              {mediaType === 'certificate' ? 'Upload Gambar Sertifikat / URL' : mediaType === 'web' ? 'URL Website / Screenshot' : mediaType === 'movie' ? 'Gambar Cover Film / URL Cover' : 'Media URL / File'}
             </label>
             <input
               type="text"
               value={mediaUrl}
               onChange={(e) => setMediaUrl(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 mb-3 text-slate-900 dark:text-white text-sm"
-              placeholder={mediaType === 'web' ? "Paste URL (iframe) atau pilih screenshot di bawah" : "Paste URL atau pilih file di bawah"}
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 mb-3 text-slate-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              placeholder={mediaType === 'web' ? "Paste URL (iframe) atau screenshot" : mediaType === 'movie' ? "Paste URL Gambar Cover Film" : "Paste URL atau pilih file lokal di bawah"}
             />
 
-            <label className="inline-block cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-4 py-2 rounded-lg text-sm font-medium">
-              {isOptimizing ? 'Memproses...' : 'Pilih File Local'}
+            <label className="inline-block cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-sm">
+              {isOptimizing ? 'Memproses...' : 'Pilih File Lokal'}
               <input 
                 type="file" 
                 ref={fileInputRef} 
                 className="hidden" 
                 disabled={isOptimizing}
                 onChange={handleFileUpload} 
-                accept={mediaType === 'image' || mediaType === 'certificate' || mediaType === 'web' ? "image/*" : mediaType === 'video' ? "video/*" : "audio/*"} 
+                accept={mediaType === 'image' || mediaType === 'certificate' || mediaType === 'web' || mediaType === 'movie' ? "image/*" : (mediaType === 'video') ? "video/*" : "audio/*"} 
               />
             </label>
             {renderMediaPreview()}
@@ -286,20 +294,20 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none"
-              placeholder={mediaType === 'certificate' ? "Jelaskan kompetensi yang didapatkan..." : "Jelaskan detail karya..."}
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              placeholder={mediaType === 'certificate' ? "Kompetensi yang didapatkan..." : mediaType === 'movie' ? "Sinopsis singkat film..." : "Jelaskan detail karya..."}
             />
           </div>
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              {mediaType === 'certificate' ? 'Link Verifikasi Kredensial' : 'Link Proyek Eksternal'}
+              {mediaType === 'certificate' ? 'Link Verifikasi Kredensial' : mediaType === 'movie' ? 'Link Film (YouTube/Vimeo/Drive) *' : 'Link Proyek Eksternal'}
             </label>
             <input
               type="url"
               value={projectUrl}
               onChange={(e) => setProjectUrl(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none"
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               placeholder="https://..."
             />
           </div>
@@ -310,12 +318,12 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
               type="text"
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none"
-              placeholder="Design, Analytics, Marketing"
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              placeholder="Cinematic, React, UX, Film"
             />
           </div>
 
-          <Button type="submit" isLoading={isSubmitting || isOptimizing} className="w-full py-4 text-lg">
+          <Button type="submit" isLoading={isSubmitting || isOptimizing} className="w-full py-4 text-lg font-black uppercase tracking-widest">
             Simpan Portofolio
           </Button>
         </form>
