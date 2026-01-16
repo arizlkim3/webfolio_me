@@ -37,7 +37,8 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
         setMessage(null);
         try {
           // Kompres ke maks 1200px dengan kualitas 0.7
-          const optimizedBase64 = await compressImage(file, 1200, 1200, 0.7);
+          // Fixed: compressImage only expects (file, maxWidth, quality)
+          const optimizedBase64 = await compressImage(file, 1200, 0.7);
           setMediaUrl(optimizedBase64);
         } catch (err) {
           setMessage({ type: 'error', text: 'Gagal mengoptimalkan gambar.' });
