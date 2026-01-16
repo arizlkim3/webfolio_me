@@ -26,6 +26,18 @@ const SECTIONS: { type: MediaType; label: string; description: string; icon: Rea
   { type: 'image', label: 'Gambar', description: 'Fotografi & desain.', color: 'from-violet-500 to-purple-600', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> }
 ];
 
+/**
+ * Helper function to truncate a string by word count
+ */
+const truncateByWords = (str: string, maxWords: number) => {
+  if (!str) return '';
+  const words = str.trim().split(/\s+/);
+  if (words.length > maxWords) {
+    return words.slice(0, maxWords).join(' ') + '...';
+  }
+  return str;
+};
+
 const MediaItem: React.FC<{ item: PortfolioItem; isMinimal?: boolean; useZoomLoop?: boolean; isModal?: boolean }> = ({ item, isMinimal, useZoomLoop, isModal }) => {
   const [isLoading, setIsLoading] = useState(true);
   const type = item.mediaType || 'image';
@@ -81,10 +93,28 @@ const FeaturedBanner: React.FC<{ items: PortfolioItem[] }> = ({ items }) => {
   }, [items.length]);
   if (items.length === 0) return null;
   const activeItem = items[currentIndex];
+
+  // Logic for dynamic font size on Banner
+  const titleText = truncateByWords(activeItem.title, 4);
+  const bannerTitleSize = titleText.length > 20 ? 'text-xl md:text-3xl' : 'text-2xl md:text-5xl';
+
   return (
     <div className="relative w-full h-[220px] md:h-[400px] rounded-[1.5rem] md:rounded-[2rem] overflow-hidden mb-8 md:mb-12 shadow-2xl animate-scale-up group">
        <div className="absolute inset-0 bg-slate-200 dark:bg-slate-800"><div key={activeItem.id} className="w-full h-full"><MediaItem item={activeItem} useZoomLoop={true} /></div><div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div></div>
-       <div className="absolute bottom-0 left-0 p-5 md:p-10 w-full max-w-2xl z-10"><div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-white text-[7px] md:text-[9px] font-black uppercase tracking-widest mb-2 md:mb-3"><span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-red-500 animate-pulse"></span>Karya Unggulan</div><h2 className="text-xl md:text-4xl font-black text-white leading-none mb-2 md:mb-3 drop-shadow-md">{activeItem.title}</h2><p className="hidden md:block text-white/70 text-xs md:text-sm line-clamp-2 mb-5 max-w-xl">{activeItem.description}</p><div className="flex items-center gap-4"><a href={activeItem.projectUrl || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-full bg-primary text-white font-black text-[8px] md:text-[10px] hover:bg-white hover:text-primary transition-all shadow-xl active:scale-95">BUKA KARYA</a></div></div>
+       <div className="absolute bottom-0 left-0 p-5 md:p-10 w-full max-w-2xl z-10">
+         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-white text-[7px] md:text-[9px] font-black uppercase tracking-widest mb-2 md:mb-3">
+           <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-red-500 animate-pulse"></span>Karya Unggulan
+         </div>
+         <h2 className={`font-black text-white leading-none mb-2 md:mb-3 drop-shadow-md transition-all duration-500 ${bannerTitleSize}`}>
+           {titleText}
+         </h2>
+         <p className="hidden md:block text-white/70 text-xs md:text-sm mb-5 max-w-xl">
+           {truncateByWords(activeItem.description, 5)}
+         </p>
+         <div className="flex items-center gap-4">
+           <a href={activeItem.projectUrl || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 rounded-full bg-primary text-white font-black text-[8px] md:text-[10px] hover:bg-white hover:text-primary transition-all shadow-xl active:scale-95">BUKA KARYA</a>
+         </div>
+       </div>
        {items.length > 1 && <div className="absolute bottom-4 right-6 flex gap-1 z-20">{items.map((_, idx) => <button key={idx} onClick={() => setCurrentIndex(idx)} className={`transition-all duration-500 rounded-full h-0.5 md:h-1 ${idx === currentIndex ? 'w-4 md:w-6 bg-primary' : 'w-1 bg-white/30'}`} />)}</div>}
     </div>
   );
@@ -130,9 +160,7 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
-      // Filter kategori movie hanya untuk Admin
       if (!isCreator && (item.mediaType || 'image') === 'movie') return false;
-      
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || item.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesTag = selectedTag ? item.tags.includes(selectedTag) : true;
       const matchesCategory = selectedCategory ? (item.mediaType || 'image') === selectedCategory : true;
@@ -185,7 +213,6 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                     <button onClick={() => setViewMode('categories')} className={`px-2.5 py-1.5 md:px-4 md:py-2 rounded-md md:rounded-lg text-[8px] md:text-[9px] font-black transition-all ${viewMode === 'categories' || selectedCategory ? 'bg-white dark:bg-slate-700 text-primary shadow-md' : 'text-slate-500'}`}>KATEGORI</button>
                   </div>
 
-                  {/* Grid Column Controls */}
                   <div className="flex bg-slate-500/10 dark:bg-slate-400/10 p-0.5 md:p-1 rounded-lg md:rounded-xl border border-white/10 dark:border-slate-700/50 backdrop-blur-md">
                     <button 
                       onClick={() => { setDisplayMode('grid'); setGridCols(1); }} 
@@ -280,8 +307,20 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                       )}
                       {(!selectedTag && !searchQuery) && sectionFeaturedItems.length > 0 && <FeaturedBanner items={sectionFeaturedItems} />}
                       <div className={getGridClass()}>
-                        {sectionItems.map((item, idx) => (
-                          displayMode === 'grid' ? (
+                        {sectionItems.map((item, idx) => {
+                          const displayTitle = truncateByWords(item.title, 4);
+                          const displayDesc = truncateByWords(item.description, 5);
+                          
+                          // Adaptive font size calculation
+                          const titleSizeClass = gridCols === 1 
+                            ? (displayTitle.length > 20 ? 'text-2xl md:text-4xl' : 'text-3xl md:text-6xl')
+                            : (displayTitle.length > 15 ? 'text-[11px] md:text-lg lg:text-xl' : 'text-[13px] md:text-2xl lg:text-3xl');
+                          
+                          const descSizeClass = gridCols === 1
+                            ? (displayDesc.length > 30 ? 'text-xs md:text-lg' : 'text-sm md:text-xl')
+                            : (displayDesc.length > 25 ? 'text-[8px] md:text-[10px] lg:text-[11px]' : 'text-[9px] md:text-xs lg:text-sm');
+
+                          return displayMode === 'grid' ? (
                             <div key={item.id} onClick={() => handleSelectItem(item)} className={`group relative aspect-[3/4] rounded-[1.2rem] md:rounded-[2rem] overflow-hidden shadow-2xl transition-all duration-500 cursor-pointer hover:-translate-y-2 opacity-0 animate-scale-up animation-delay-${Math.min(1000, 300 + (idx * 50))}`}>
                                <div className="absolute inset-0 bg-slate-200 dark:bg-slate-900 overflow-hidden">
                                  <MediaItem item={item} />
@@ -315,11 +354,11 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                                      <span key={tag} className={`bg-white/10 backdrop-blur-md rounded-md font-black text-white uppercase tracking-widest ${gridCols === 1 ? 'px-4 py-1.5 text-[10px]' : 'px-2 py-1 text-[8px]'}`}>#{tag}</span>
                                    ))}
                                  </div>
-                                 <h3 className={`font-black leading-[1.1] tracking-tighter group-hover:text-primary transition-colors drop-shadow-2xl truncate md:whitespace-normal mb-1.5 md:mb-3 ${gridCols === 1 ? 'text-2xl md:text-5xl' : 'text-xs md:text-xl lg:text-2xl'}`}>
-                                   {item.title}
+                                 <h3 className={`font-black leading-[1.1] tracking-tighter group-hover:text-primary transition-all duration-300 drop-shadow-2xl mb-1.5 md:mb-3 line-clamp-2 ${titleSizeClass}`}>
+                                   {displayTitle}
                                  </h3>
-                                 <p className={`text-white/80 leading-relaxed font-medium transition-all duration-500 ${gridCols === 1 ? 'block text-xs md:text-xl max-w-3xl mb-8' : 'hidden md:block text-[10px] lg:text-[11px] line-clamp-2 md:line-clamp-3 mb-6 opacity-70 group-hover:opacity-100'}`}>
-                                   {item.description}
+                                 <p className={`text-white/80 leading-relaxed font-medium transition-all duration-500 opacity-70 group-hover:opacity-100 ${gridCols === 1 ? 'block max-w-3xl mb-8' : 'hidden md:block mb-6'} ${descSizeClass}`}>
+                                   {displayDesc}
                                  </p>
                                  <div className={`items-center ${gridCols === 1 ? 'flex' : 'hidden md:flex'}`}>
                                    <span className={`font-black text-white bg-primary/95 border border-white/20 rounded-xl shadow-2xl transition-all uppercase tracking-widest hover:bg-white hover:text-primary active:scale-95 ${gridCols === 1 ? 'px-10 py-4 text-[10px] md:text-sm' : 'px-6 py-2.5 text-[9px] md:text-[10px]'}`}>
@@ -329,9 +368,9 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                                </div>
                             </div>
                           ) : (
-                            <div key={item.id} onClick={() => handleSelectItem(item)} className={`group relative flex items-center gap-2.5 bg-white/30 dark:bg-slate-800/50 backdrop-blur-md pl-1 pr-3 py-1 border border-white/20 dark:border-slate-700 rounded-full hover:border-primary transition-all cursor-pointer active:scale-95 shadow-sm opacity-0 animate-fly-in-right animation-delay-${Math.min(1000, 300 + (idx * 40))}`}><div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 border border-white/20 shadow-inner"><MediaItem item={item} isMinimal={true} /></div><span className="text-[9px] font-black text-slate-900 dark:text-white truncate max-w-[100px] uppercase tracking-tight leading-none">{item.title}</span></div>
-                          )
-                        ))}
+                            <div key={item.id} onClick={() => handleSelectItem(item)} className={`group relative flex items-center gap-2.5 bg-white/30 dark:bg-slate-800/50 backdrop-blur-md pl-1 pr-3 py-1 border border-white/20 dark:border-slate-700 rounded-full hover:border-primary transition-all cursor-pointer active:scale-95 shadow-sm opacity-0 animate-fly-in-right animation-delay-${Math.min(1000, 300 + (idx * 40))}`}><div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 border border-white/20 shadow-inner"><MediaItem item={item} isMinimal={true} /></div><span className="text-[9px] font-black text-slate-900 dark:text-white truncate max-w-[100px] uppercase tracking-tight leading-none">{displayTitle}</span></div>
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -384,10 +423,11 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                          <span key={tag} className="px-3 py-1 md:px-4 md:py-1.5 bg-white/5 backdrop-blur-xl rounded-lg md:rounded-xl text-[8px] md:text-xs font-black text-white/60 uppercase tracking-widest border border-white/10">#{tag}</span>
                        ))}
                     </div>
-                    <h2 className="text-3xl md:text-7xl lg:text-8xl font-black text-white mb-2 md:mb-6 leading-none tracking-tighter drop-shadow-2xl">
+                    {/* Modal uses full text but adaptive font size */}
+                    <h2 className={`font-black text-white mb-2 md:mb-6 leading-none tracking-tighter drop-shadow-2xl ${selectedItem.title.length > 25 ? 'text-3xl md:text-6xl' : 'text-4xl md:text-8xl'}`}>
                        {selectedItem.title}
                     </h2>
-                    <p className="text-white/70 md:text-white/80 text-[11px] md:text-xl leading-relaxed max-w-3xl mb-6 md:mb-12 line-clamp-3 md:line-clamp-none whitespace-pre-line font-medium drop-shadow-lg">
+                    <p className={`text-white/70 md:text-white/80 leading-relaxed max-w-3xl mb-6 md:mb-12 whitespace-pre-line font-medium drop-shadow-lg ${selectedItem.description.length > 100 ? 'text-[11px] md:text-lg' : 'text-xs md:text-xl'}`}>
                        {selectedItem.description}
                     </p>
                     <div className="flex flex-col sm:flex-row items-center gap-4 md:gap-5">
