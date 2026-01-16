@@ -1,157 +1,198 @@
 
-import { PortfolioItem, UserProfile, LOCAL_STORAGE_KEY, LOCAL_STORAGE_PROFILE_KEY } from '../types';
+import { PortfolioItem, UserProfile, LOCAL_STORAGE_KEY, LOCAL_STORAGE_PROFILE_KEY, Skill } from '../types';
 import { STATIC_PORTFOLIO_DATA, STATIC_PROFILE_DATA } from '../data/portfolioData';
 
-// Konfigurasi Database - Secara otomatis mengambil dari Vercel Environment Variables
-const DB_CONFIG = {
-  apiKey: process.env.MONGODB_DATA_API_KEY || '',
-  endpoint: process.env.MONGODB_DATA_URL || '',
-  cluster: process.env.MONGODB_CLUSTER || 'Cluster0',
-  database: process.env.MONGODB_DB || 'webfolio_db',
-  collection: 'portfolios',
-  profileCollection: 'user_profile'
-};
-
-// Deteksi status koneksi database
-export const isDatabaseConnected = () => !!DB_CONFIG.apiKey && !!DB_CONFIG.endpoint;
+// --- IMAGE OPTIMIZATION UTILITY ---
 
 /**
- * Core function untuk komunikasi dengan MongoDB Atlas via HTTPS (Vercel Friendly)
+ * Mengompres gambar menggunakan Canvas API
+ * @param file File gambar asli
+ * @param maxWidth Lebar maksimal
+ * @param maxHeight Tinggi maksimal
+ * @param quality Kualitas (0.0 - 1.0)
  */
-async function apiRequest(action: string, payload: any) {
-  if (!isDatabaseConnected()) return null;
-
-  try {
-    const response = await fetch(`${DB_CONFIG.endpoint}/action/${action}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'api-key': DB_CONFIG.apiKey,
-      },
-      body: JSON.stringify({
-        dataSource: DB_CONFIG.cluster,
-        database: DB_CONFIG.database,
-        collection: DB_CONFIG.collection,
-        ...payload
-      }),
-    });
-
-    if (!response.ok) throw new Error('DB Connection Failed');
-    return await response.json();
-  } catch (error) {
-    console.warn(`[Vercel DB Sync] ${action} failed:`, error);
-    return null;
-  }
-}
-
-// --- UTILITIES ---
-
-export const compressImage = (file: File, maxWidth = 1000, quality = 0.7): Promise<string> => {
+export const compressImage = (
+  file: File, 
+  maxWidth: number = 1200, 
+  maxHeight: number = 1200, 
+  quality: number = 0.7
+): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
-    reader.onload = (e) => {
+    reader.onload = (event) => {
       const img = new Image();
-      img.src = e.target?.result as string;
+      img.src = event.target?.result as string;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const ratio = img.width / img.height;
-        canvas.width = maxWidth;
-        canvas.height = maxWidth / ratio;
+        let width = img.width;
+        let height = img.height;
+
+        // Hitung rasio aspek
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        if (!ctx) return reject(new Error('Canvas context not available'));
+        
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Export sebagai JPEG dengan kompresi
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
       };
+      img.onerror = (err) => reject(err);
     };
-    reader.onerror = reject;
+    reader.onerror = (err) => reject(err);
   });
 };
 
-// --- PORTFOLIO DATA ---
+// --- PORTFOLIO ITEMS ---
 
-export const getPortfolioData = async (): Promise<PortfolioItem[]> => {
-  // 1. Load dari Cache Lokal dulu (Instan)
-  const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
-  let items = cached ? JSON.parse(cached) : [...STATIC_PORTFOLIO_DATA];
+export const getPortfolioData = (): PortfolioItem[] => {
+  try {
+    const localDataString = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const localItems = localDataString ? (JSON.parse(localDataString) as PortfolioItem[]) : [];
+    
+    const itemsMap = new Map<string, PortfolioItem>();
+    
+    (STATIC_PORTFOLIO_DATA as any[]).forEach(item => {
+      itemsMap.set(item.id, {
+        ...item,
+        mediaUrl: item.mediaUrl || item.imageUrl || '',
+        mediaType: item.mediaType || 'image',
+        tags: item.tags || [],
+        projectUrl: item.projectUrl || '',
+        isFeatured: !!item.isFeatured,
+        createdAt: item.createdAt || 0
+      });
+    });
 
-  // 2. Fetch dari Cloud (Async)
-  if (isDatabaseConnected()) {
-    const result = await apiRequest('find', { filter: {} });
-    if (result && result.documents) {
-      const cloudItems = result.documents;
-      // Merge Cloud & Local (Cloud selalu menang jika ID sama)
-      const map = new Map();
-      items.forEach((i: any) => map.set(i.id, i));
-      cloudItems.forEach((i: any) => map.set(i.id, i));
-      items = Array.from(map.values()).sort((a, b) => b.createdAt - a.createdAt);
-      
-      // Update Cache
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
-    }
+    localItems.forEach(item => {
+      itemsMap.set(item.id, {
+        ...item,
+        isFeatured: !!item.isFeatured
+      });
+    });
+
+    return Array.from(itemsMap.values()).sort((a, b) => b.createdAt - a.createdAt);
+  } catch (error) {
+    console.error("Gagal memuat data:", error);
+    return STATIC_PORTFOLIO_DATA as unknown as PortfolioItem[];
   }
-  
-  return items;
 };
 
-export const savePortfolioItem = async (item: PortfolioItem): Promise<boolean> => {
+export const savePortfolioItem = (item: PortfolioItem): boolean => {
   try {
-    // Save Local
-    const current = await getPortfolioData();
-    const index = current.findIndex(i => i.id === item.id);
-    const updated = index >= 0 ? current.map((i, idx) => idx === index ? item : i) : [item, ...current];
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-
-    // Sync to Cloud
-    if (isDatabaseConnected()) {
-      await apiRequest('updateOne', {
-        filter: { id: item.id },
-        update: { $set: item },
-        upsert: true
-      });
+    const localDataString = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const currentData = localDataString ? JSON.parse(localDataString) as PortfolioItem[] : [];
+    
+    const existingIndex = currentData.findIndex(d => d.id === item.id);
+    let newData;
+    
+    if (existingIndex >= 0) {
+        newData = [...currentData];
+        newData[existingIndex] = item;
+    } else {
+        newData = [item, ...currentData];
     }
+
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newData));
     return true;
-  } catch {
+  } catch (error) {
+    console.error("Gagal menyimpan data:", error);
     return false;
   }
 };
 
-export const deletePortfolioItem = async (id: string): Promise<void> => {
-  const current = await getPortfolioData();
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(current.filter(i => i.id !== id)));
-  
-  if (isDatabaseConnected()) {
-    await apiRequest('deleteOne', { filter: { id } });
+export const toggleFeaturedItem = (id: string): boolean => {
+  try {
+    const allItems = getPortfolioData();
+    const itemToToggle = allItems.find(i => i.id === id);
+    
+    if (!itemToToggle) return false;
+
+    const updatedItem = { 
+      ...itemToToggle, 
+      isFeatured: !itemToToggle.isFeatured 
+    };
+
+    const localDataString = localStorage.getItem(LOCAL_STORAGE_KEY);
+    let localData = localDataString ? JSON.parse(localDataString) as PortfolioItem[] : [];
+    
+    const localIndex = localData.findIndex(i => i.id === id);
+    if (localIndex >= 0) {
+      localData[localIndex] = updatedItem;
+    } else {
+      localData.push(updatedItem);
+    }
+
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localData));
+    return true;
+  } catch (error) {
+    console.error("Gagal toggle status unggulan:", error);
+    return false;
   }
 };
 
-export const toggleFeaturedItem = async (id: string): Promise<boolean> => {
-  const current = await getPortfolioData();
-  const item = current.find(i => i.id === id);
-  if (!item) return false;
-  
-  item.isFeatured = !item.isFeatured;
-  return await savePortfolioItem(item);
+export const deletePortfolioItem = (id: string): void => {
+  try {
+    const isStatic = (STATIC_PORTFOLIO_DATA as any[]).some(item => item.id === id);
+    
+    if (isStatic) {
+      alert("Karya bawaan sistem tidak bisa dihapus dari UI. Silakan hapus ID tersebut di portfolioData.ts");
+      return; 
+    }
+
+    const localDataString = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (localDataString) {
+      const currentData = JSON.parse(localDataString) as PortfolioItem[];
+      const newData = currentData.filter(item => item.id !== id);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newData));
+    }
+  } catch (error) {
+    console.error("Gagal menghapus data:", error);
+  }
 };
 
-// --- PROFILE ---
+// --- USER PROFILE ---
+const DEFAULT_PROFILE: UserProfile = {
+  name: "Nama Lengkap Anda",
+  role: "Profesi / Keahlian Utama",
+  bio: "Tuliskan deskripsi singkat tentang diri Anda.",
+  address: "Kota, Negara",
+  skills: [],
+  education: [],
+  experience: [],
+};
 
 export const getUserProfile = (): UserProfile => {
-  const cached = localStorage.getItem(LOCAL_STORAGE_PROFILE_KEY);
-  return cached ? JSON.parse(cached) : (STATIC_PROFILE_DATA || {
-    name: "User", role: "Kreator", bio: "", address: "", skills: [], education: [], experience: []
-  });
+  try {
+    if (STATIC_PROFILE_DATA) return STATIC_PROFILE_DATA;
+    const localProfileString = localStorage.getItem(LOCAL_STORAGE_PROFILE_KEY);
+    return localProfileString ? JSON.parse(localProfileString) : DEFAULT_PROFILE;
+  } catch (error) {
+    return DEFAULT_PROFILE;
+  }
 };
 
-export const saveUserProfile = async (profile: UserProfile): Promise<boolean> => {
-  localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(profile));
-  
-  if (isDatabaseConnected()) {
-    await apiRequest('updateOne', {
-      collection: DB_CONFIG.profileCollection,
-      filter: { type: 'main_profile' },
-      update: { $set: { ...profile, type: 'main_profile' } },
-      upsert: true
-    });
+export const saveUserProfile = (profile: UserProfile): boolean => {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_PROFILE_KEY, JSON.stringify(profile));
+    return true;
+  } catch (error) {
+    return false;
   }
-  return true;
 };

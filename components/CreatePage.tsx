@@ -8,6 +8,29 @@ interface CreatePageProps {
   onSuccess: () => void;
 }
 
+const MEDIA_ICONS: Record<MediaType, { icon: React.ReactNode, label: string }> = {
+  image: {
+    label: 'Gambar',
+    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+  },
+  video: {
+    label: 'Video',
+    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+  },
+  audio: {
+    label: 'Audio',
+    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" /></svg>
+  },
+  web: {
+    label: 'Web',
+    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+  },
+  certificate: {
+    label: 'Sertifikat',
+    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+  }
+};
+
 const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -37,8 +60,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
         setMessage(null);
         try {
           // Kompres ke maks 1200px dengan kualitas 0.7
-          // Fixed: compressImage only expects (file, maxWidth, quality)
-          const optimizedBase64 = await compressImage(file, 1200, 0.7);
+          const optimizedBase64 = await compressImage(file, 1200, 1200, 0.7);
           setMediaUrl(optimizedBase64);
         } catch (err) {
           setMessage({ type: 'error', text: 'Gagal mengoptimalkan gambar.' });
@@ -206,23 +228,27 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Tipe Media</label>
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+            <div className="grid grid-cols-5 gap-1.5 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
               {(['image', 'video', 'audio', 'web', 'certificate'] as MediaType[]).map((type) => (
                 <button
                   key={type}
                   type="button"
+                  title={MEDIA_ICONS[type].label}
                   onClick={() => {
                     setMediaType(type);
                     setMediaUrl('');
                     if (fileInputRef.current) fileInputRef.current.value = '';
                   }}
-                  className={`py-2 px-1 rounded-md text-[10px] sm:text-xs font-bold transition-all ${
+                  className={`flex flex-col items-center justify-center py-2.5 rounded-lg transition-all duration-300 ${
                     mediaType === type 
-                      ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' 
-                      : 'text-slate-500 dark:text-slate-400'
-                  } capitalize`}
+                      ? 'bg-white dark:bg-slate-700 text-primary shadow-md scale-[1.05] z-10' 
+                      : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
+                  }`}
                 >
-                  {type === 'certificate' ? 'Sertifikat' : type === 'web' ? 'Web' : type === 'image' ? 'Gambar' : type === 'video' ? 'Video' : 'Audio'}
+                  {MEDIA_ICONS[type].icon}
+                  <span className="text-[7px] md:text-[8px] font-black uppercase tracking-widest mt-1 opacity-60">
+                    {MEDIA_ICONS[type].label.slice(0, 3)}
+                  </span>
                 </button>
               ))}
             </div>

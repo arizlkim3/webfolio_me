@@ -47,8 +47,7 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
       setMessage(null);
       try {
         // Kompres avatar ke ukuran kecil (maks 400px) karena hanya avatar
-        // Fixed: compressImage only expects (file, maxWidth, quality)
-        const optimizedAvatar = await compressImage(file, 400, 0.8);
+        const optimizedAvatar = await compressImage(file, 400, 400, 0.8);
         setProfile({ ...profile, avatarUrl: optimizedAvatar });
       } catch (err) {
         setMessage({ type: 'error', text: 'Gagal memproses foto profil.' });
