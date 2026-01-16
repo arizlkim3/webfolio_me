@@ -126,7 +126,7 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<GalleryViewMode>('all');
   const [displayMode, setDisplayMode] = useState<ItemDisplayMode>('grid');
-  const [gridCols, setGridCols] = useState<GridColumnCount>(2); 
+  const [gridCols, setGridCols] = useState<GridColumnCount>(3); // Set default to 3 for Desktop aesthetics
   const [selectedCategory, setSelectedCategory] = useState<MediaType | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -233,7 +233,7 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                       className={`hidden md:flex p-1.5 md:p-2 rounded-md md:rounded-lg transition-all ${displayMode === 'grid' && gridCols === 3 ? 'bg-white dark:bg-slate-700 text-primary shadow-md' : 'text-slate-400'}`}
                       title="3 Kolom"
                     >
-                      <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                      <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                     </button>
                     <div className="w-px h-4 bg-slate-300 dark:bg-slate-600 mx-1 self-center opacity-30"></div>
                     <button 
