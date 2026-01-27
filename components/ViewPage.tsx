@@ -18,7 +18,7 @@ type ItemDisplayMode = 'grid' | 'list';
 type GridColumnCount = 1 | 2 | 3;
 
 const SECTIONS: { type: MediaType; label: string; description: string; icon: React.ReactNode; color: string }[] = [
-  { type: 'certificate', label: 'Sertifikat', description: 'Pencapaian profesional.', color: 'from-indigo-500 to-blue-600', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 00.806 1.946 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg> },
+  { type: 'certificate', label: 'Sertifikat', description: 'Pencapaian profesional.', color: 'from-indigo-500 to-blue-600', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 00.806 1.946 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438z" /></svg> },
   { type: 'web', label: 'Website', description: 'Aplikasi & situs.', color: 'from-emerald-500 to-teal-600', icon: <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg> },
   { type: '3d', label: '3D Design', description: 'Karya tiga dimensi.', color: 'from-orange-500 to-amber-600', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" /></svg> },
   { type: 'movie', label: 'Movie', description: 'Karya sinematik.', color: 'from-slate-900 to-indigo-900', icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V20M17 4V20M3 8H7M17 8H21M3 12H21M3 16H7M17 16H21M4 20H20C21.1046 20 22 19.1046 22 18V6C22 4.89543 21.1046 4 20 4H4C2.89543 4 2 4.89543 2 6V18C2 19.1046 2.89543 20 4 20Z" /></svg> },
@@ -81,7 +81,7 @@ const MediaItem: React.FC<{ item: PortfolioItem; isMinimal?: boolean; useZoomLoo
     return (
       <div className="w-full h-full flex flex-col items-center justify-center p-12 bg-slate-900">
          <div className="w-20 h-20 mb-6 rounded-3xl bg-primary/20 flex items-center justify-center animate-pulse border border-primary/30 shadow-2xl">
-           <svg className="w-10 h-10 text-primary" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 3V15.035A3.987 3.987 0 004 15a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0010 19V5.14l8-1.6V12.035A3.987 3.987 0 0016 12a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0010 19V5.14l8-1.6V12.035A3.987 3.987 0 0016 12a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0010 19V5.14l8-1.6V12.035A3.987 3.987 0 0016 12a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0010 19V5.14l8-1.6V12.035A3.987 3.987 0 0016 12a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0010 19V5.14l8-1.6V12.035A3.987 3.987 0 0016 12a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0010 19V5.14l8-1.6V12.035A3.987 3.987 0 0016 12a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0022 16V4a1 1 0 00-.4-.8z"/></svg>
+           <svg className="w-10 h-10 text-primary" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 3V15.035A3.987 3.987 0 004 15a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0010 19V5.14l8-1.6V12.035A3.987 3.987 0 0016 12a4 4 0 100 8 3.987 3.987 0 002.167-.651A3.996 3.996 0 0022 16V4a1 1 0 00-.4-.8z"/></svg>
          </div>
          <audio src={url} controls autoPlay className="w-full max-w-md shadow-2xl" />
       </div>
@@ -336,7 +336,8 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                                <div className={`absolute z-20 flex justify-between items-start w-full ${gridCols === 1 ? 'p-8' : 'p-4 md:p-6'}`}>
                                  <div className="flex flex-wrap gap-1">
                                    <span className={`px-2 py-0.5 md:px-2.5 md:py-0.8 bg-white/10 backdrop-blur-xl border border-white/20 text-white font-black uppercase tracking-tighter rounded-md md:rounded-lg shadow-sm ${gridCols === 1 ? 'text-[10px]' : 'text-[7px] md:text-[8px]'}`}>
-                                     {item.mediaType === '3d' ? '3D DESIGN' : item.mediaType?.toUpperCase()}
+                                     {/* Fixed: Use (section.type as string) to avoid narrowing issues with item.mediaType inside the filtered map. */}
+                                     {(section.type as string) === '3d' ? '3D DESIGN' : item.mediaType?.toUpperCase()}
                                    </span>
                                    {item.isFeatured && (
                                      <span className={`px-1.5 py-0.5 md:px-2 md:py-0.8 bg-rose-500 text-white font-black uppercase tracking-tighter rounded-md md:rounded-lg shadow-sm animate-pulse ${gridCols === 1 ? 'text-[8px] md:text-[10px]' : 'text-[6px] md:text-[8px]'}`}>
@@ -369,7 +370,8 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                                  </p>
                                  <div className={`items-center ${gridCols === 1 ? 'flex' : 'hidden md:flex'}`}>
                                    <span className={`font-black text-white bg-primary/95 border border-white/20 rounded-xl shadow-2xl transition-all uppercase tracking-widest hover:bg-white hover:text-primary active:scale-95 ${gridCols === 1 ? 'px-10 py-4 text-[10px] md:text-sm' : 'px-6 py-2.5 text-[9px] md:text-[10px]'}`}>
-                                     {item.mediaType === 'certificate' ? 'LIHAT SERTIFIKAT' : 'LIHAT KARYA'}
+                                     {/* Fixed: Use (section.type as string) to avoid narrowing issues with item.mediaType inside the filtered map. */}
+                                     {(section.type as string) === 'certificate' ? 'LIHAT SERTIFIKAT' : 'LIHAT KARYA'}
                                    </span>
                                  </div>
                                </div>
@@ -450,7 +452,7 @@ const ViewPage: React.FC<ViewPageProps> = ({ isCreator, activeTab, setActiveTab,
                          <div className="flex gap-2.5 w-full sm:w-auto">
                             <button 
                                onClick={() => { handleToggleFeatured(selectedItem.id); handleSelectItem(getPortfolioData().find(i => i.id === selectedItem.id) || null); }}
-                               className={`p-5 md:p-6 rounded-2xl md:rounded-3xl border transition-all ${selectedItem.isFeatured ? 'bg-rose-500/20 border-rose-500/30 text-rose-500' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}
+                               className={`p-5 md:p-6 rounded-2xl md:rounded-3xl border transition-all ${selectedItem.isFeatured ? 'bg-rose-500/30 border-rose-500/50 text-rose-500' : 'bg-white/10 border-white/20 text-white hover:bg-white/10'}`}
                             >
                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-7 md:w-7" fill={selectedItem.isFeatured ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />

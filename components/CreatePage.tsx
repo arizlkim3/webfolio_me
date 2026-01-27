@@ -57,15 +57,12 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
       const limit = 10 * 1024 * 1024; // 10MB limit
       
       if (file.size > limit) {
-        setMessage({ type: 'error', text: 'Ukuran file terlalu besar (Maks 10MB).' });
-        if (fileInputRef.current) fileInputRef.current.value = '';
+        setMessage({ type: 'error', text: 'File terlalu besar (Maks 10MB).' });
         return;
       }
 
-      // Gunakan kompresi gambar untuk 3D (karena sekarang berupa render gambar statis)
-      if (file.type.startsWith('image/') && (mediaType === 'image' || mediaType === 'certificate' || mediaType === 'web' || mediaType === 'movie' || mediaType === '3d')) {
+      if (file.type.startsWith('image/')) {
         setIsOptimizing(true);
-        setMessage(null);
         try {
           const optimizedBase64 = await compressImage(file, 1200, 1200, 0.7);
           setMediaUrl(optimizedBase64);
@@ -76,10 +73,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
         }
       } else {
         const reader = new FileReader();
-        reader.onloadend = () => {
-          setMediaUrl(reader.result as string);
-          setMessage(null);
-        };
+        reader.onloadend = () => setMediaUrl(reader.result as string);
         reader.readAsDataURL(file);
       }
     }
@@ -93,6 +87,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
     if (!title || !description) {
       setMessage({ type: 'error', text: 'Judul dan Deskripsi wajib diisi.' });
       setIsSubmitting(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -113,111 +108,119 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
       if (success) {
         onSuccess();
       } else {
-        setMessage({ type: 'error', text: 'Gagal menyimpan. Memori lokal penuh.' });
+        setMessage({ type: 'error', text: 'Gagal menyimpan. Database lokal penuh.' });
       }
       setIsSubmitting(false);
     }, 800);
   };
 
   return (
-    <div className="max-w-2xl mx-auto animate-fade-in">
-      <div className="bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-2xl p-5 md:p-8 shadow-xl">
-        <h2 className="text-2xl md:text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-          Buat Portofolio Baru
+    <div className="max-w-2xl mx-auto animate-fade-in pb-20">
+      <div className="bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-3xl p-6 md:p-10 shadow-2xl">
+        <h2 className="text-3xl font-black mb-8 text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary uppercase tracking-tight">
+          BUAT KARYA BARU
         </h2>
 
         {message && (
-          <div className={`mb-6 p-4 rounded-lg text-sm font-bold ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+          <div className={`mb-8 p-5 rounded-2xl text-sm font-black uppercase tracking-widest ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
             {message.text}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form id="portfolio-create-form" onSubmit={handleSubmit} className="space-y-8">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Judul Proyek *</label>
+            <label className="label">Judul Proyek *</label>
             <input
               type="text"
+              required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-              placeholder="Contoh: Render 3D Karakter"
+              className="input-field"
+              placeholder="Contoh: Modern Website UI"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Tipe Media</label>
-            <div className="grid grid-cols-3 sm:grid-cols-7 gap-2 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner">
+            <label className="label">Tipe Media</label>
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 bg-slate-100 dark:bg-slate-800/50 p-2 rounded-2xl border border-slate-200 dark:border-slate-700">
               {(['image', 'video', 'movie', '3d', 'audio', 'web', 'certificate'] as MediaType[]).map((type) => (
                 <button
                   key={type}
                   type="button"
-                  title={MEDIA_ICONS[type].label}
                   onClick={() => { setMediaType(type); setMediaUrl(''); }}
-                  className={`flex flex-col items-center justify-center py-2.5 rounded-lg transition-all duration-300 ${
+                  className={`flex flex-col items-center justify-center py-3 rounded-xl transition-all ${
                     mediaType === type 
-                      ? 'bg-white dark:bg-slate-700 text-primary shadow-md scale-[1.05] z-10' 
-                      : 'text-slate-400 dark:text-slate-500 hover:text-slate-600'
+                      ? 'bg-white dark:bg-slate-700 text-primary shadow-lg scale-[1.05] ring-1 ring-primary/20' 
+                      : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
                   {MEDIA_ICONS[type].icon}
-                  <span className="text-[7px] md:text-[8px] font-black uppercase mt-1 opacity-60">{MEDIA_ICONS[type].label.slice(0, 4)}</span>
+                  <span className="text-[6px] font-black uppercase mt-1 tracking-tighter">{MEDIA_ICONS[type].label.slice(0, 3)}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              {mediaType === '3d' ? 'Upload Gambar Hasil Render 3D' : 'Media URL / File'}
-            </label>
-            <div className="flex flex-col gap-3">
+          <div className="space-y-4">
+            <label className="label">Konten Media</label>
+            <div className="flex flex-col gap-4">
               <input
                 type="text"
                 value={mediaUrl}
                 onChange={(e) => setMediaUrl(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                placeholder="Paste URL gambar atau pilih file lokal di bawah"
+                className="input-field text-xs"
+                placeholder="Masukkan URL media atau upload file..."
               />
-              <label className="inline-block cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-200 transition-all active:scale-95 shadow-sm text-center">
-                {isOptimizing ? 'Memproses...' : 'Pilih File Lokal (Maks 10MB)'}
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  className="hidden" 
-                  disabled={isOptimizing}
-                  onChange={handleFileUpload} 
-                  accept="image/*,video/*,audio/*"
-                />
+              <label className="flex items-center justify-center gap-2 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-200 cursor-pointer transition-all">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                {isOptimizing ? 'MEMPROSES...' : 'UPLOAD FILE (MAX 10MB)'}
+                <input type="file" ref={fileInputRef} className="hidden" disabled={isOptimizing} onChange={handleFileUpload} accept="image/*,video/*,audio/*" />
               </label>
             </div>
-            
-            {mediaUrl && !isOptimizing && (
-               <div className="mt-4 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 relative aspect-video bg-slate-900 flex items-center justify-center">
-                  {(mediaType === 'image' || mediaType === 'certificate' || mediaType === 'movie' || mediaType === '3d') ? (
-                    <img src={mediaUrl} className="w-full h-full object-contain" alt="Preview" />
-                  ) : mediaType === 'video' ? (
-                    <video src={mediaUrl} className="w-full h-full object-contain" controls />
-                  ) : <div className="text-white text-xs font-black">PREVIEW READY</div>}
-               </div>
-            )}
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Deskripsi *</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-              placeholder="Jelaskan detail karya..."
+            <label className="label">Tags (Pisahkan dengan koma)</label>
+            <input
+              type="text"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              className="input-field"
+              placeholder="Design, Proyek, 3D"
             />
           </div>
 
-          <Button type="submit" isLoading={isSubmitting || isOptimizing} className="w-full py-4 text-lg font-black uppercase tracking-widest">
-            Simpan Portofolio
-          </Button>
+          <div>
+            <label className="label">Deskripsi Proyek *</label>
+            <textarea
+              required
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              className="input-field"
+              placeholder="Jelaskan detail karya Anda..."
+            />
+          </div>
+
+          {/* NORMAL SAVE BUTTON (Inside Form Card) */}
+          <div className="pt-8 border-t border-slate-100 dark:border-slate-800">
+            <Button 
+              type="submit" 
+              isLoading={isSubmitting || isOptimizing} 
+              className="w-full py-5 text-sm md:text-base font-black uppercase tracking-[0.4em] rounded-2xl md:rounded-3xl shadow-2xl shadow-primary/20"
+            >
+              Simpan Portofolio
+            </Button>
+          </div>
         </form>
       </div>
+
+      <style>{`
+        .label { display: block; font-size: 0.75rem; font-weight: 900; color: #64748b; margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; }
+        .input-field { width: 100%; background-color: #f8fafc; border: 2px solid #e2e8f0; border-radius: 1.25rem; padding: 1rem 1.5rem; color: #0f172a; outline: none; transition: all 0.3s; font-weight: 700; }
+        .dark .input-field { background-color: #0f172a; border-color: #1e293b; color: #f1f5f9; }
+        .input-field:focus { border-color: #6366f1; box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.1); }
+      `}</style>
     </div>
   );
 };

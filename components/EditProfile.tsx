@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { UserProfile, Education, Experience, Skill, SocialLinks } from '../types';
-import { getUserProfile, saveUserProfile, compressImage } from '../services/storage';
+import { UserProfile, Skill, SocialLinks } from '../types';
+import { getUserProfile, saveUserProfile, compressImage, generatePortfolioCode, downloadPortfolioFile } from '../services/storage';
 import Button from './Button';
 
 interface EditProfileProps {
@@ -28,25 +28,12 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
     setProfile({ ...profile, [field]: value });
   };
 
-  const handleSocialChange = (platform: keyof SocialLinks, value: string) => {
-    if (!profile) return;
-    setProfile({
-      ...profile,
-      socials: {
-        ...profile.socials,
-        [platform]: value
-      }
-    });
-  };
-
-  // --- Avatar Handlers ---
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && profile) {
       setIsOptimizing(true);
       setMessage(null);
       try {
-        // Kompres avatar ke ukuran kecil (maks 400px) karena hanya avatar
         const optimizedAvatar = await compressImage(file, 400, 400, 0.8);
         setProfile({ ...profile, avatarUrl: optimizedAvatar });
       } catch (err) {
@@ -57,50 +44,16 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
     }
   };
 
-  const handleRemoveAvatar = () => {
-    if (profile) {
-      setProfile({ ...profile, avatarUrl: undefined });
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+  const handleCopySourceCode = () => {
+    const code = generatePortfolioCode();
+    navigator.clipboard.writeText(code).then(() => {
+      setMessage({ type: 'success', text: 'Kode portfolioData.ts berhasil disalin!' });
+      setTimeout(() => setMessage(null), 4000);
+    }).catch(() => {
+      setMessage({ type: 'error', text: 'Gagal menyalin kode.' });
+    });
   };
 
-  // --- Education Handlers ---
-  const addEducation = () => {
-    if (!profile) return;
-    const newEdu: Education = { id: crypto.randomUUID(), school: '', degree: '', year: '' };
-    setProfile({ ...profile, education: [...profile.education, newEdu] });
-  };
-
-  const removeEducation = (id: string) => {
-    if (!profile) return;
-    setProfile({ ...profile, education: profile.education.filter(e => e.id !== id) });
-  };
-
-  const updateEducation = (id: string, field: keyof Education, value: string) => {
-    if (!profile) return;
-    const updatedEdu = profile.education.map(e => e.id === id ? { ...e, [field]: value } : e);
-    setProfile({ ...profile, education: updatedEdu });
-  };
-
-  // --- Experience Handlers ---
-  const addExperience = () => {
-    if (!profile) return;
-    const newExp: Experience = { id: crypto.randomUUID(), company: '', position: '', year: '', description: '' };
-    setProfile({ ...profile, experience: [...profile.experience, newExp] });
-  };
-
-  const removeExperience = (id: string) => {
-    if (!profile) return;
-    setProfile({ ...profile, experience: profile.experience.filter(exp => exp.id !== id) });
-  };
-
-  const updateExperience = (id: string, field: keyof Experience, value: string) => {
-    if (!profile) return;
-    const updatedExp = profile.experience.map(exp => exp.id === id ? { ...exp, [field]: value } : exp);
-    setProfile({ ...profile, experience: updatedExp });
-  };
-
-  // --- Skills Handlers ---
   const addSkill = () => {
     if (!profile) return;
     const newSkill: Skill = { id: crypto.randomUUID(), name: '', level: 70 };
@@ -118,27 +71,22 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
     setProfile({ ...profile, skills: updatedSkills });
   };
 
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile) return;
-
     setIsSaving(true);
-    
     const updatedProfile: UserProfile = {
       ...profile,
       skills: profile.skills.filter(s => s.name.trim().length > 0)
     };
-
     const success = saveUserProfile(updatedProfile);
-    
     setTimeout(() => {
       setIsSaving(false);
       if (success) {
-        setMessage({ type: 'success', text: 'Profil berhasil disimpan!' });
+        setMessage({ type: 'success', text: 'Profil berhasil diperbarui!' });
         setTimeout(() => onSuccess(), 1000);
       } else {
-        setMessage({ type: 'error', text: 'Gagal menyimpan profil. Memori penyimpanan penuh.' });
+        setMessage({ type: 'error', text: 'Gagal menyimpan ke memori lokal.' });
       }
     }, 800);
   };
@@ -146,318 +94,139 @@ const EditProfile: React.FC<EditProfileProps> = ({ onSuccess }) => {
   if (!profile) return <div>Loading...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto animate-fade-in pb-10">
-      <div className="bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-2xl p-5 md:p-8 shadow-xl shadow-slate-200/50 dark:shadow-none">
-        <h2 className="text-2xl md:text-3xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
-          Edit Profil
+    <div className="max-w-4xl mx-auto animate-fade-in pb-20">
+      <div className="bg-white dark:bg-card border border-slate-200 dark:border-slate-700 rounded-3xl p-6 md:p-10 shadow-2xl">
+        <h2 className="text-3xl font-black mb-8 text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary uppercase tracking-tight">
+          PENGATURAN ADMIN
         </h2>
 
         {message && (
-          <div className={`mb-6 p-4 rounded-lg text-sm font-medium ${message.type === 'success' ? 'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400'}`}>
-            {message.text}
+          <div className={`fixed top-24 left-1/2 -translate-x-1/2 z-[250] w-[90%] max-w-md p-5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-2xl animate-fade-in-down ${message.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+            <div className="flex items-center gap-3">
+               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+               {message.text}
+            </div>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form id="profile-edit-form" onSubmit={handleSubmit} className="space-y-12">
           
-          {/* Section: Foto Profil */}
-          <div className="flex flex-col md:flex-row items-center gap-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-            <div className="relative group">
-              <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700 shadow-md ring-4 ring-white dark:ring-slate-800 flex items-center justify-center">
-                {isOptimizing ? (
-                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                ) : profile.avatarUrl ? (
-                  <img src={profile.avatarUrl} alt="Avatar Preview" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-400 dark:text-slate-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-              </div>
+          {/* Section: SINKRONISASI DATA KE SOURCE CODE */}
+          <div className="space-y-6 p-6 md:p-8 bg-slate-900 dark:bg-slate-950 rounded-3xl border border-slate-700 shadow-2xl">
+            <div className="flex items-center gap-3 mb-2">
+               <div className="p-2 bg-primary/20 rounded-lg text-primary">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 7v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2zm0 4h16m-16 4h16" /></svg>
+               </div>
+               <h3 className="text-xs font-black text-white uppercase tracking-[0.3em]">SINKRONISASI DATA</h3>
             </div>
             
-            <div className="flex flex-col gap-3 text-center md:text-left">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Foto Profil</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Optimasi otomatis aktif. Hasil akan dikompres.</p>
-              </div>
-              <div className="flex gap-3 justify-center md:justify-start">
-                <label className={`cursor-pointer bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm ${isOptimizing ? 'opacity-50 pointer-events-none' : ''}`}>
-                  {isOptimizing ? 'Memproses...' : 'Ubah Foto'}
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    className="hidden" 
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    disabled={isOptimizing}
-                  />
-                </label>
-                {profile.avatarUrl && !isOptimizing && (
-                  <button 
-                    type="button" 
-                    onClick={handleRemoveAvatar}
-                    className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-                  >
-                    Hapus
-                  </button>
-                )}
-              </div>
+            <p className="text-[10px] md:text-xs text-slate-400 font-medium leading-relaxed">
+              Permanenkan data Anda dengan mengunduh atau menyalin kode di bawah ini, lalu timpa file <code>src/data/portfolioData.ts</code> Anda.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button 
+                type="button" 
+                onClick={downloadPortfolioFile}
+                className="flex items-center justify-center gap-3 py-4 bg-primary text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-white hover:text-primary transition-all border border-primary/30 shadow-lg shadow-primary/20 active:scale-95"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Unduh portfolioData.ts
+              </button>
+
+              <button 
+                type="button" 
+                onClick={handleCopySourceCode}
+                className="flex items-center justify-center gap-3 py-4 bg-slate-800 text-slate-300 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-slate-700 hover:text-white transition-all border border-slate-700 active:scale-95"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                Salin Kode (Paste)
+              </button>
+            </div>
+          </div>
+
+          {/* Section: Foto Profil */}
+          <div className="flex flex-col md:flex-row items-center gap-8 p-6 bg-slate-50 dark:bg-slate-800/30 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-inner">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700 shadow-2xl ring-4 ring-white dark:ring-slate-800 flex items-center justify-center">
+              {isOptimizing ? (
+                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              ) : profile.avatarUrl ? (
+                <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                </svg>
+              )}
+            </div>
+            <div className="text-center md:text-left">
+              <h3 className="text-xl font-bold mb-2">Foto Profil Utama</h3>
+              <p className="text-xs text-slate-500 mb-4 font-medium uppercase tracking-widest">Auto-compress aktif (JPG/PNG)</p>
+              <label className="inline-block cursor-pointer bg-primary text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20">
+                Pilih Foto
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarChange} disabled={isOptimizing} />
+              </label>
             </div>
           </div>
 
           {/* Section: Info Dasar */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-2">Informasi Dasar</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-6">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-200 dark:border-slate-700 pb-2">DATA IDENTITAS</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <label className="label">Nama Lengkap</label>
                 <input type="text" value={profile.name} onChange={(e) => handleChange('name', e.target.value)} className="input-field" />
               </div>
-              
               <div>
-                <label className="label">Role / Pekerjaan</label>
-                <input type="text" value={profile.role} onChange={(e) => handleChange('role', e.target.value)} className="input-field" placeholder="Full Stack Developer" />
+                <label className="label">Role / Spesialisasi</label>
+                <input type="text" value={profile.role} onChange={(e) => handleChange('role', e.target.value)} className="input-field" placeholder="Visual Designer" />
               </div>
-              
               <div>
-                <label className="label">Alamat / Lokasi</label>
+                <label className="label">Lokasi</label>
                 <input type="text" value={profile.address} onChange={(e) => handleChange('address', e.target.value)} className="input-field" />
               </div>
-
-              <div>
-                <label className="label">Umur (Tahun)</label>
-                <input type="number" value={profile.age || ''} onChange={(e) => handleChange('age', e.target.value)} className="input-field" placeholder="25" />
-              </div>
-
-              <div>
-                <label className="label">Jenis Kelamin</label>
-                <select 
-                  value={profile.gender || 'Pria'} 
-                  onChange={(e) => handleChange('gender', e.target.value)} 
-                  className="input-field appearance-none cursor-pointer"
-                >
-                  <option value="Pria">Pria</option>
-                  <option value="Wanita">Wanita</option>
-                  <option value="Lainnya">Lainnya</option>
-                </select>
-              </div>
-
               <div className="md:col-span-2">
-                <label className="label">Biografi Singkat</label>
+                <label className="label">Bio Singkat</label>
                 <textarea rows={3} value={profile.bio} onChange={(e) => handleChange('bio', e.target.value)} className="input-field" />
               </div>
             </div>
           </div>
 
-          {/* Section: Kontak & Sosmed */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-2">Kontak & Media Sosial</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div>
-                <label className="label">Email</label>
-                <input type="email" value={profile.email || ''} onChange={(e) => handleChange('email', e.target.value)} className="input-field" />
-              </div>
-              
-              <div>
-                <label className="label">Nomor Telepon</label>
-                <input type="tel" value={profile.phone || ''} onChange={(e) => handleChange('phone', e.target.value)} className="input-field" placeholder="0812-xxxx-xxxx" />
-              </div>
-
-              <div>
-                <label className="label flex items-center gap-2">
-                  <span className="text-green-500 font-bold">WhatsApp</span> Nomor (Tanpa '+')
-                </label>
-                <input 
-                  type="text" 
-                  value={profile.socials?.whatsapp || ''} 
-                  onChange={(e) => handleSocialChange('whatsapp', e.target.value)} 
-                  className="input-field" 
-                  placeholder="Contoh: 6281476655793" 
-                />
-              </div>
-
-              <div>
-                <label className="label flex items-center gap-2">
-                  <span className="text-blue-600">LinkedIn</span> URL
-                </label>
-                <input 
-                  type="url" 
-                  value={profile.socials?.linkedin || ''} 
-                  onChange={(e) => handleSocialChange('linkedin', e.target.value)} 
-                  className="input-field" 
-                  placeholder="https://linkedin.com/in/username" 
-                />
-              </div>
-
-              <div>
-                <label className="label flex items-center gap-2">
-                  <span className="text-gray-800 dark:text-white">GitHub</span> URL
-                </label>
-                <input 
-                  type="url" 
-                  value={profile.socials?.github || ''} 
-                  onChange={(e) => handleSocialChange('github', e.target.value)} 
-                  className="input-field" 
-                  placeholder="https://github.com/username" 
-                />
-              </div>
-
-              <div>
-                <label className="label flex items-center gap-2">
-                  <span className="text-pink-600">Instagram</span> URL
-                </label>
-                <input 
-                  type="url" 
-                  value={profile.socials?.instagram || ''} 
-                  onChange={(e) => handleSocialChange('instagram', e.target.value)} 
-                  className="input-field" 
-                  placeholder="https://instagram.com/username" 
-                />
-              </div>
-
-              <div>
-                <label className="label flex items-center gap-2">
-                  <span className="text-slate-900 dark:text-white">Vercel</span> URL
-                </label>
-                <input 
-                  type="url" 
-                  value={profile.socials?.vercel || ''} 
-                  onChange={(e) => handleSocialChange('vercel', e.target.value)} 
-                  className="input-field" 
-                  placeholder="https://vercel.com/username" 
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Section: Keahlian (Skills) */}
-          <div className="space-y-4">
+          <div className="space-y-6">
              <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Keahlian & Kemahiran</h3>
-                <Button type="button" variant="secondary" onClick={addSkill} className="text-xs py-1 px-3">
-                   + Tambah Skill
-                </Button>
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">SKILLS & KEAHLIAN</h3>
+                <button type="button" onClick={addSkill} className="text-[10px] font-black uppercase text-primary bg-primary/10 px-4 py-2 rounded-xl hover:bg-primary hover:text-white transition-all">+ TAMBAH</button>
              </div>
-             
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {profile.skills.map((skill) => (
-                  <div key={skill.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 relative">
-                     <button type="button" onClick={() => removeSkill(skill.id)} className="absolute top-2 right-2 text-red-400 hover:text-red-600 transition-colors">✕</button>
-                     
-                     <div className="mb-3 pr-6">
-                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Nama Skill</label>
-                        <input 
-                          type="text" 
-                          value={skill.name} 
-                          onChange={(e) => updateSkill(skill.id, 'name', e.target.value)} 
-                          className="input-field text-sm" 
-                          placeholder="Contoh: Photoshop, React" 
-                        />
+                  <div key={skill.id} className="p-5 bg-slate-50 dark:bg-slate-800/20 rounded-2xl border border-slate-200 dark:border-slate-700 relative group">
+                     <button type="button" onClick={() => removeSkill(skill.id)} className="absolute top-4 right-4 text-red-400 hover:text-red-600 transition-colors">✕</button>
+                     <div className="mb-4 pr-8">
+                        <label className="label-sm">NAMA SKILL</label>
+                        <input type="text" value={skill.name} onChange={(e) => updateSkill(skill.id, 'name', e.target.value)} className="input-field text-sm" placeholder="Contoh: Figma" />
                      </div>
-                     
-                     <div>
-                        <div className="flex justify-between items-center mb-1">
-                          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400">Tingkat Kemahiran</label>
-                          <span className="text-xs font-bold text-primary">{skill.level}%</span>
-                        </div>
-                        <input 
-                          type="range" 
-                          min="0" 
-                          max="100" 
-                          value={skill.level} 
-                          onChange={(e) => updateSkill(skill.id, 'level', parseInt(e.target.value))} 
-                          className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
-                        />
+                     <div className="flex items-center gap-4">
+                        <input type="range" min="0" max="100" value={skill.level} onChange={(e) => updateSkill(skill.id, 'level', parseInt(e.target.value))} className="flex-1 accent-primary" />
+                        <span className="text-xs font-black text-primary">{skill.level}%</span>
                      </div>
                   </div>
                 ))}
              </div>
-             {profile.skills.length === 0 && <p className="text-slate-500 text-sm italic">Belum ada skill yang ditambahkan.</p>}
           </div>
 
-          {/* Section: Pengalaman */}
-          <div className="space-y-4">
-             <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Pengalaman Kerja</h3>
-                <Button type="button" variant="secondary" onClick={addExperience} className="text-xs py-1 px-3">
-                   + Tambah
-                </Button>
-             </div>
-             {profile.experience.map((exp) => (
-               <div key={exp.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 relative group">
-                  <button type="button" onClick={() => removeExperience(exp.id)} className="absolute top-2 right-2 text-red-400 hover:text-red-600">✕</button>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                    <input type="text" value={exp.company} onChange={(e) => updateExperience(exp.id, 'company', e.target.value)} className="input-field text-sm" placeholder="Nama Perusahaan" />
-                    <input type="text" value={exp.position} onChange={(e) => updateExperience(exp.id, 'position', e.target.value)} className="input-field text-sm" placeholder="Posisi / Jabatan" />
-                    <input type="text" value={exp.year} onChange={(e) => updateExperience(exp.id, 'year', e.target.value)} className="input-field text-sm md:col-span-2" placeholder="Tahun (misal: 2020 - 2022)" />
-                  </div>
-                  <textarea rows={2} value={exp.description} onChange={(e) => updateExperience(exp.id, 'description', e.target.value)} className="input-field text-sm" placeholder="Deskripsi pekerjaan..." />
-               </div>
-             ))}
-             {profile.experience.length === 0 && <p className="text-slate-500 text-sm italic">Belum ada data pengalaman.</p>}
-          </div>
-
-          {/* Section: Pendidikan */}
-          <div className="space-y-4">
-             <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-white">Pendidikan</h3>
-                <Button type="button" variant="secondary" onClick={addEducation} className="text-xs py-1 px-3">
-                   + Tambah
-                </Button>
-             </div>
-             {profile.education.map((edu) => (
-               <div key={edu.id} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 relative group">
-                  <button type="button" onClick={() => removeEducation(edu.id)} className="absolute top-2 right-2 text-red-400 hover:text-red-600">✕</button>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <input type="text" value={edu.school} onChange={(e) => updateEducation(edu.id, 'school', e.target.value)} className="input-field text-sm" placeholder="Nama Sekolah/Univ" />
-                    <input type="text" value={edu.degree} onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)} className="input-field text-sm" placeholder="Gelar / Jurusan" />
-                    <input type="text" value={edu.year} onChange={(e) => updateEducation(edu.id, 'year', e.target.value)} className="input-field text-sm" placeholder="Tahun" />
-                  </div>
-               </div>
-             ))}
-             {profile.education.length === 0 && <p className="text-slate-500 text-sm italic">Belum ada data pendidikan.</p>}
-          </div>
-
-          <div className="pt-4 flex gap-4">
-            <Button type="button" variant="secondary" onClick={onSuccess} className="w-1/3" disabled={isOptimizing}>Batal</Button>
-            <Button type="submit" isLoading={isSaving} className="w-2/3" disabled={isOptimizing}>Simpan Perubahan</Button>
+          {/* NORMAL SAVE BAR (Inside Form Card) */}
+          <div className="pt-8 border-t border-slate-200 dark:border-slate-700 flex flex-col md:flex-row gap-4">
+             <Button type="button" variant="secondary" onClick={onSuccess} className="flex-1 py-4 text-xs font-black uppercase tracking-widest rounded-2xl border-2">Batal</Button>
+             <Button type="submit" isLoading={isSaving} className="flex-[2] py-4 text-xs md:text-sm font-black uppercase tracking-[0.3em] rounded-2xl shadow-2xl shadow-primary/20">Simpan Perubahan</Button>
           </div>
         </form>
       </div>
+
       <style>{`
-        .label {
-          display: block;
-          font-size: 0.875rem;
-          font-weight: 600;
-          color: #334155;
-          margin-bottom: 0.5rem;
-        }
-        .dark .label {
-          color: #cbd5e1;
-        }
-        .input-field {
-          width: 100%;
-          background-color: #f8fafc;
-          border: 1px solid #cbd5e1;
-          border-radius: 0.5rem;
-          padding: 0.5rem 1rem;
-          color: #0f172a;
-          outline: none;
-          transition: all 0.2s;
-        }
-        .dark .input-field {
-          background-color: #0f172a;
-          border-color: #334155;
-          color: #fff;
-        }
-        .input-field:focus {
-          ring: 2px;
-          ring-color: #6366f1;
-          border-color: transparent;
-        }
+        .label { display: block; font-size: 0.7rem; font-weight: 900; color: #64748b; margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; }
+        .label-sm { display: block; font-size: 0.6rem; font-weight: 900; color: #94a3b8; margin-bottom: 0.4rem; letter-spacing: 0.1em; }
+        .input-field { width: 100%; background-color: #f8fafc; border: 2px solid #e2e8f0; border-radius: 1rem; padding: 0.8rem 1.2rem; color: #0f172a; outline: none; transition: all 0.3s; font-weight: 700; font-size: 0.9rem; }
+        .dark .input-field { background-color: #0f172a; border-color: #1e293b; color: #f1f5f9; }
+        .input-field:focus { border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); }
       `}</style>
     </div>
   );

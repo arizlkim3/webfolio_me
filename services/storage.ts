@@ -1,16 +1,9 @@
 
-import { PortfolioItem, UserProfile, LOCAL_STORAGE_KEY, LOCAL_STORAGE_PROFILE_KEY, Skill } from '../types';
+import { PortfolioItem, UserProfile, LOCAL_STORAGE_KEY, LOCAL_STORAGE_PROFILE_KEY } from '../types';
 import { STATIC_PORTFOLIO_DATA, STATIC_PROFILE_DATA } from '../data/portfolioData';
 
 // --- IMAGE OPTIMIZATION UTILITY ---
 
-/**
- * Mengompres gambar menggunakan Canvas API
- * @param file File gambar asli
- * @param maxWidth Lebar maksimal
- * @param maxHeight Tinggi maksimal
- * @param quality Kualitas (0.0 - 1.0)
- */
 export const compressImage = (
   file: File, 
   maxWidth: number = 1200, 
@@ -28,7 +21,6 @@ export const compressImage = (
         let width = img.width;
         let height = img.height;
 
-        // Hitung rasio aspek
         if (width > height) {
           if (width > maxWidth) {
             height *= maxWidth / width;
@@ -48,8 +40,6 @@ export const compressImage = (
         if (!ctx) return reject(new Error('Canvas context not available'));
         
         ctx.drawImage(img, 0, 0, width, height);
-        
-        // Export sebagai JPEG dengan kompresi
         const dataUrl = canvas.toDataURL('image/jpeg', quality);
         resolve(dataUrl);
       };
@@ -68,6 +58,7 @@ export const getPortfolioData = (): PortfolioItem[] => {
     
     const itemsMap = new Map<string, PortfolioItem>();
     
+    // Load static data first
     (STATIC_PORTFOLIO_DATA as any[]).forEach(item => {
       itemsMap.set(item.id, {
         ...item,
@@ -80,6 +71,7 @@ export const getPortfolioData = (): PortfolioItem[] => {
       });
     });
 
+    // Overwrite with local data if exists
     localItems.forEach(item => {
       itemsMap.set(item.id, {
         ...item,
@@ -121,14 +113,9 @@ export const toggleFeaturedItem = (id: string): boolean => {
   try {
     const allItems = getPortfolioData();
     const itemToToggle = allItems.find(i => i.id === id);
-    
     if (!itemToToggle) return false;
-
-    const updatedItem = { 
-      ...itemToToggle, 
-      isFeatured: !itemToToggle.isFeatured 
-    };
-
+    const updatedItem = { ...itemToToggle, isFeatured: !itemToToggle.isFeatured };
+    
     const localDataString = localStorage.getItem(LOCAL_STORAGE_KEY);
     let localData = localDataString ? JSON.parse(localDataString) as PortfolioItem[] : [];
     
@@ -138,24 +125,16 @@ export const toggleFeaturedItem = (id: string): boolean => {
     } else {
       localData.push(updatedItem);
     }
-
+    
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localData));
     return true;
   } catch (error) {
-    console.error("Gagal toggle status unggulan:", error);
     return false;
   }
 };
 
 export const deletePortfolioItem = (id: string): void => {
   try {
-    const isStatic = (STATIC_PORTFOLIO_DATA as any[]).some(item => item.id === id);
-    
-    if (isStatic) {
-      alert("Karya bawaan sistem tidak bisa dihapus dari UI. Silakan hapus ID tersebut di portfolioData.ts");
-      return; 
-    }
-
     const localDataString = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (localDataString) {
       const currentData = JSON.parse(localDataString) as PortfolioItem[];
@@ -180,9 +159,10 @@ const DEFAULT_PROFILE: UserProfile = {
 
 export const getUserProfile = (): UserProfile => {
   try {
-    if (STATIC_PROFILE_DATA) return STATIC_PROFILE_DATA;
     const localProfileString = localStorage.getItem(LOCAL_STORAGE_PROFILE_KEY);
-    return localProfileString ? JSON.parse(localProfileString) : DEFAULT_PROFILE;
+    if (localProfileString) return JSON.parse(localProfileString);
+    if (STATIC_PROFILE_DATA) return STATIC_PROFILE_DATA;
+    return DEFAULT_PROFILE;
   } catch (error) {
     return DEFAULT_PROFILE;
   }
@@ -195,4 +175,40 @@ export const saveUserProfile = (profile: UserProfile): boolean => {
   } catch (error) {
     return false;
   }
+};
+
+// --- DATA SINKRONISASI (FOR portfolioData.ts) ---
+
+/**
+ * Menghasilkan teks kode TypeScript untuk disalin ke file portfolioData.ts
+ */
+export const generatePortfolioCode = (): string => {
+  const portfolio = getPortfolioData();
+  const profile = getUserProfile();
+  
+  return `import { PortfolioItem, UserProfile } from '../types';
+
+/**
+ * DATA PORTOFOLIO PERMANEN
+ * Salin dan tempel konten ini ke src/data/portfolioData.ts
+ */
+
+export const STATIC_PORTFOLIO_DATA: PortfolioItem[] = ${JSON.stringify(portfolio, null, 2)};
+
+export const STATIC_PROFILE_DATA: UserProfile | null = ${JSON.stringify(profile, null, 2)};
+`;
+};
+
+/**
+ * Mendownload data dalam format file .ts
+ */
+export const downloadPortfolioFile = () => {
+  const code = generatePortfolioCode();
+  const blob = new Blob([code], { type: 'text/typescript' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'portfolioData.ts';
+  link.click();
+  URL.revokeObjectURL(url);
 };
