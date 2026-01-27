@@ -1,5 +1,5 @@
 
-export type MediaType = 'image' | 'video' | 'audio' | 'web' | 'certificate' | 'movie';
+export type MediaType = 'image' | 'video' | 'audio' | 'web' | 'certificate' | 'movie' | '3d';
 
 export interface PortfolioItem {
   id: string;
