@@ -174,38 +174,6 @@ export const STATIC_PORTFOLIO_DATA: PortfolioItem[] = [
     "isFeatured": false
   },
   {
-    "id": "35b73b6f-d5b7-4583-bbe2-47e70bc9c31c",
-    "title": "KarirPro",
-    "description": "KarirPro adalah generator CV dan Surat Lamaran berbasis web yang dirancang untuk membantu para pencari kerja. Dengan menyediakan template yang terstruktur dan format yang mudah diisi, KarirPro memungkinkan pengguna untuk merancang dan mengunduh dokumen lamaran yang terlihat profesional dan optimal untuk menarik perhatian perekrut.",
-    "projectUrl": "https://karirpro.vercel.app/",
-    "mediaType": "web",
-    "mediaUrl": "https://karirpro.vercel.app/",
-    "tags": [
-      "ResumeBuilder",
-      "JobApplication",
-      "OnlineTool",
-      "Karir"
-    ],
-    "createdAt": 1764572179465,
-    "isFeatured": false
-  },
-  {
-    "id": "53f7124d-960b-4539-93fa-e4362e00b221",
-    "title": "ProdPack",
-    "description": "Alat ini khusus untuk manajemen dan pemantauan proses produksi atau pengembangan yang berjalan.",
-    "projectUrl": "https://prodpack.vercel.app/",
-    "mediaType": "web",
-    "mediaUrl": "https://prodpack.vercel.app/",
-    "tags": [
-      "Monitoring",
-      "OnlineTool",
-      "ProjectManagement",
-      "Workflow"
-    ],
-    "createdAt": 1764571923232,
-    "isFeatured": false
-  },
-  {
     "id": "366d2059-73d5-412e-83e3-a71b29d6c332",
     "title": "Wajah yang Dilukis Takdir",
     "description": "Di bawah sorotan cahaya yang memisahkan dunia, ini adalah potret Manifestasi Diri yang rentan sekaligus agung. Cahaya tunggal jatuh dengan kejam, merobek kegelapan dan mengungkap retakan di topeng yang selama ini dikenakan.",
