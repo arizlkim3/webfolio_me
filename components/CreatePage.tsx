@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { PortfolioItem, MediaType } from '../types';
 import { savePortfolioItem, compressImage } from '../services/storage';
 import Button from './Button';
@@ -35,6 +35,58 @@ const MEDIA_ICONS: Record<MediaType, { icon: React.ReactNode, label: string }> =
   }
 };
 
+const MEDIA_CONFIG: Record<MediaType, { titlePlaceholder: string, projectUrlLabel: string, projectUrlPlaceholder: string, tagsPlaceholder: string, descriptionPlaceholder: string }> = {
+  image: {
+    titlePlaceholder: 'Contoh: Fotografi Produk Kopi',
+    projectUrlLabel: 'URL Publikasi (Opsional)',
+    projectUrlPlaceholder: 'https://dribbble.com/shot/...',
+    tagsPlaceholder: 'Fotografi, Produk, Branding',
+    descriptionPlaceholder: 'Jelaskan konsep, teknik pencahayaan, dan tujuan dari sesi foto ini.'
+  },
+  video: {
+    titlePlaceholder: 'Contoh: Video Sinematik Perjalanan',
+    projectUrlLabel: 'URL Video (Opsional)',
+    projectUrlPlaceholder: 'https://youtube.com/watch?v=...',
+    tagsPlaceholder: 'Videografi, Travel, Premiere Pro',
+    descriptionPlaceholder: 'Ceritakan tentang lokasi, peralatan yang digunakan, dan proses editing.'
+  },
+  movie: {
+    titlePlaceholder: 'Contoh: Film Pendek "Senja"',
+    projectUrlLabel: 'URL Trailer/Film (Opsional)',
+    projectUrlPlaceholder: 'https://vimeo.com/12345678',
+    tagsPlaceholder: 'Film, Drama, Sinematografi',
+    descriptionPlaceholder: 'Tulis sinopsis singkat, peran Anda dalam produksi, dan penghargaan yang diraih.'
+  },
+  '3d': {
+    titlePlaceholder: 'Contoh: Desain Karakter Robot',
+    projectUrlLabel: 'URL Render/Proyek (Opsional)',
+    projectUrlPlaceholder: 'https://www.artstation.com/artwork/...',
+    tagsPlaceholder: '3D, Blender, Karakter',
+    descriptionPlaceholder: 'Jelaskan software yang digunakan, proses modeling, texturing, dan rendering.'
+  },
+  audio: {
+    titlePlaceholder: 'Contoh: Produksi Musik "Lofi Beats"',
+    projectUrlLabel: 'URL Audio (Opsional)',
+    projectUrlPlaceholder: 'https://soundcloud.com/user/track',
+    tagsPlaceholder: 'Musik, Produksi, Ableton',
+    descriptionPlaceholder: 'Deskripsikan genre, inspirasi, dan instrumen yang digunakan dalam karya ini.'
+  },
+  web: {
+    titlePlaceholder: 'Contoh: Situs E-commerce Kopi',
+    projectUrlLabel: 'URL Proyek/Situs',
+    projectUrlPlaceholder: 'https://namasitus.com',
+    tagsPlaceholder: 'Web Dev, React, TailwindCSS',
+    descriptionPlaceholder: 'Jelaskan teknologi yang digunakan, fitur utama, dan peran Anda dalam pengembangan.'
+  },
+  certificate: {
+    titlePlaceholder: 'Contoh: Sertifikasi Google Cloud',
+    projectUrlLabel: 'URL Verifikasi (Opsional)',
+    projectUrlPlaceholder: 'https://credential.net/verify/...',
+    tagsPlaceholder: 'Cloud, GCP, Sertifikasi',
+    descriptionPlaceholder: 'Jelaskan tentang sertifikasi ini, lembaga yang mengeluarkan, dan validitasnya.'
+  }
+};
+
 interface CreatePageProps {
   onSuccess: () => void;
 }
@@ -50,6 +102,8 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const currentConfig = useMemo(() => MEDIA_CONFIG[mediaType], [mediaType]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -136,7 +190,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="input-field"
-              placeholder="Contoh: Modern Website UI"
+              placeholder={currentConfig.titlePlaceholder}
             />
           </div>
 
@@ -180,13 +234,24 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
           </div>
 
           <div>
+            <label className="label">{currentConfig.projectUrlLabel}</label>
+            <input
+              type="text"
+              value={projectUrl}
+              onChange={(e) => setProjectUrl(e.target.value)}
+              className="input-field"
+              placeholder={currentConfig.projectUrlPlaceholder}
+            />
+          </div>
+
+          <div>
             <label className="label">Tags (Pisahkan dengan koma)</label>
             <input
               type="text"
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               className="input-field"
-              placeholder="Design, Proyek, 3D"
+              placeholder={currentConfig.tagsPlaceholder}
             />
           </div>
 
@@ -198,7 +263,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ onSuccess }) => {
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               className="input-field"
-              placeholder="Jelaskan detail karya Anda..."
+              placeholder={currentConfig.descriptionPlaceholder}
             />
           </div>
 
